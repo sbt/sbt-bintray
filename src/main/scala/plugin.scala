@@ -7,18 +7,18 @@ import dispatch._, dispatch.Defaults
 object Opts {
   object resolver {
     val jcenter = MavenRepository("BintrayJCenter", "http://jcenter.bintray.com")
-    def bintrayPublisher(name: String, repo: String, pkg: String) =
+    def publishTo(name: String, repo: String, pkg: String) =
       MavenRepository(
-        "Bintray-%s-%s-%s" format(name, repo, pkg),
+        "Bintray-Publish-%s-%s-%s" format(name, repo, pkg),
         "http://api.bintray.com/maven/%s/%s/%s".format(
           name, repo, pkg))
-    def bintrayRepo(name: String, repo: String) =
+    def repo(name: String, repo: String) =
       MavenRepository(
-        "Bintray-%s-%s" format(name, repo),
-        "http://dl.bintray.com/%s/%s".format(
+        "Bintray-Resolve-%s-%s" format(name, repo),
+        "http://dl.bintray.com/content/%s/%s".format(
           name, repo))
   }
-} 
+}
 
 object Plugin extends sbt.Plugin {
   import Keys._
@@ -28,7 +28,7 @@ object Plugin extends sbt.Plugin {
   val bintrayPackageLabels = SettingKey[Seq[String]](
     "bintrayPackageLabels", "List of labels associated with bintray package that will be added on auto package creation")
 
-  private def credentialsPath = 
+  private def credentialsPath =
     Path.userHome / ".bintray" / ".credentials"
 
   private def ensurePackageTask: Def.Initialize[sbt.Task[Unit]] =
@@ -42,14 +42,14 @@ object Plugin extends sbt.Plugin {
           if (!exists) sys.error("was not able to find or create a package for %s in repo %s named %s"
                                  .format(creds("user"), repo, name))
         }.getOrElse("failed to retrieve bintray credentials")
-    }    
+    }
 
   private def publishToBintrayOrDefault: Def.Initialize[Option[Resolver]] =
     (publishTo, bintrayRepo, name, streams).apply {
       case (provided @ Some(_), _, _, out) => provided
       case (_, repo, pkg, out) =>
         ensuredCredentials.map { creds =>
-          Opts.resolver.bintrayPublisher(creds("user"), repo, pkg)
+          Opts.resolver.publishTo(creds("user"), repo, pkg)
         }
     }
 
@@ -57,7 +57,7 @@ object Plugin extends sbt.Plugin {
     (bintrayRepo, name).apply {
       (repo,  pkg) =>
         ensuredCredentials.map { creds =>
-          Opts.resolver.bintrayRepo(creds("user"), repo)
+          Opts.resolver.repo(creds("user"), repo)
         }.getOrElse(sys.error("unable to resolve bintray credentials"))
     }
 
