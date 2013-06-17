@@ -12,11 +12,11 @@ object Opts {
         "Bintray-%s-%s-%s" format(name, repo, pkg),
         "http://api.bintray.com/maven/%s/%s/%s".format(
           name, repo, pkg))
-    def bintrayRepo(name: String, repo: String, pkg: String) =
+    def bintrayRepo(name: String, repo: String) =
       MavenRepository(
-        "Bintray-%s-%s-%s" format(name, repo, pkg),
-        "http://api.bintray.com/maven/%s/%s/%s".format(
-          name, repo, pkg))
+        "Bintray-%s-%s" format(name, repo),
+        "http://dl.bintray.com/%s/%s".format(
+          name, repo))
   }
 } 
 
@@ -24,7 +24,7 @@ object Plugin extends sbt.Plugin {
   import Keys._
 
   val bintrayRepo = SettingKey[String](
-    "bintryRepo", "Bintry repository to publish to. Defaults to 'maven'")
+    "bintrayRepo", "Bintry repository to publish to. Defaults to 'maven'")
   val bintrayPackageLabels = SettingKey[Seq[String]](
     "bintrayPackageLabels", "List of labels associated with bintray package that will be added on auto package creation")
 
@@ -57,7 +57,7 @@ object Plugin extends sbt.Plugin {
     (bintrayRepo, name).apply {
       (repo,  pkg) =>
         ensuredCredentials.map { creds =>
-          Opts.resolver.bintrayRepo(creds("user"), repo, pkg)
+          Opts.resolver.bintrayRepo(creds("user"), repo)
         }.getOrElse(sys.error("unable to resolve bintray credentials"))
     }
 
