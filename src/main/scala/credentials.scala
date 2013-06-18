@@ -6,7 +6,7 @@ import java.io.File
 object BintrayCredentials {
   val Keys = Seq("realm", "host", "user", "password")
   def template(name: String, password: String) =
-    """realm = Bintray
+    """realm = Bintray API
       |host = api.bintray.com
       |user = %s
       |password = %s""".stripMargin.format(name, password)
@@ -27,7 +27,7 @@ object BintrayCredentials {
         else Right(Some(mapped))
       case _ => Right(None)
     }
-    
+
   def write(user: String, password: String, path: File) =
     IO.write(path, template(user, password))
 }
