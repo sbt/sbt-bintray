@@ -1,24 +1,9 @@
 package bintray
 
+import java.io.File
 import sbt._
 import bintry._
 import dispatch._, dispatch.Defaults
-
-object Opts {
-  object resolver {
-    val jcenter = MavenRepository("BintrayJCenter", "http://jcenter.bintray.com")
-    def publishTo(name: String, repo: String, pkg: String) =
-      MavenRepository(
-        "Bintray-Publish-%s-%s-%s" format(name, repo, pkg),
-        "http://api.bintray.com/maven/%s/%s/%s".format(
-          name, repo, pkg))
-    def repo(name: String, repo: String) =
-      MavenRepository(
-        "Bintray-Resolve-%s-%s" format(name, repo),
-        "http://dl.bintray.com/content/%s/%s".format(
-          name, repo))
-  }
-}
 
 object Plugin extends sbt.Plugin {
   import Keys._
@@ -27,84 +12,83 @@ object Plugin extends sbt.Plugin {
     "bintrayRepo", "Bintry repository to publish to. Defaults to 'maven'")
   val bintrayPackageLabels = SettingKey[Seq[String]](
     "bintrayPackageLabels", "List of labels associated with bintray package that will be added on auto package creation")
+  val bintrayCredentialsPath = SettingKey[File](
+    "bintrayCredentialsPath", "File containing bintray api credentials")
 
-  private def credentialsPath =
-    Path.userHome / ".bintray" / ".credentials"
-
+  /** Ensure user-specific bintray package exists */
   private def ensurePackageTask: Def.Initialize[sbt.Task[Unit]] =
-    (bintrayRepo, name, description, bintrayPackageLabels, streams).map {
-      case (repo, name, desc, labels, out) =>
-        ensuredCredentials.map { creds =>
+    (bintrayCredentialsPath, bintrayRepo, name, description, bintrayPackageLabels, streams).map {
+      case (creds, repo, name, desc, labels, out) =>
+        ensuredCredentials(creds).map { creds =>
           val bty = Client(creds("user"), creds("password")).repo(creds("user"), repo)
           val exists =
-            if (bty.get(name)(new FunctionHandler(_.getStatusCode == 404))()) true
+            if (bty.get(name)(new FunctionHandler(_.getStatusCode != 404))()) true
             else bty.createPackage(name, desc, labels:_*)(new FunctionHandler(_.getStatusCode == 201))()
           if (!exists) sys.error("was not able to find or create a package for %s in repo %s named %s"
                                  .format(creds("user"), repo, name))
         }.getOrElse("failed to retrieve bintray credentials")
     }
 
+  /** if credentials exists and the build user hasn't defined a publishTo,
+   *  set a user-speciic publishTo endpoint */
   private def publishToBintrayOrDefault: Def.Initialize[Option[Resolver]] =
-    (publishTo, bintrayRepo, name, streams).apply {
-      case (provided @ Some(_), _, _, out) => provided
-      case (_, repo, pkg, out) =>
-        ensuredCredentials.map { creds =>
+    (publishTo, bintrayCredentialsPath, bintrayRepo, name, streams).apply {
+      case (provided @ Some(_), _, _, _, out) => provided
+      case (_, creds, repo, pkg, out) =>
+        ensuredCredentials(creds, prompt = false).map { creds =>
           Opts.resolver.publishTo(creds("user"), repo, pkg)
         }
     }
 
-  private def mkPackageResolver: Def.Initialize[Resolver] =
-    (bintrayRepo, name).apply {
-      (repo,  pkg) =>
-        ensuredCredentials.map { creds =>
-          Opts.resolver.repo(creds("user"), repo)
-        }.getOrElse(sys.error("unable to resolve bintray credentials"))
+  /** if credentials exist, append a user-specific resolver */
+  private def appendBintrayResolver: Def.Initialize[Seq[Resolver]] =
+    (bintrayCredentialsPath, bintrayRepo).apply {
+      (creds, repo) =>
+        BintrayCredentials.read(creds).fold({ err =>
+          println("bintray credentials %s is malformed".format(err))
+          Nil
+        }, {
+          _.map { creds => Seq(Opts.resolver.repo(creds("user"), repo)) }
+           .getOrElse(Nil)
+        })
     }
 
-  private def ensuredCredentials =
-    readCredentials match {
+  private def ensuredCredentials(creds: File, prompt: Boolean = true): Option[Map[String, String]] =
+    BintrayCredentials.read(creds).fold(sys.error(_), _ match {
       case None =>
-        val name = SimpleReader.readLine("Enter bintray username: ").get.trim
-        if (name.isEmpty) sys.error("bintray user required")
-        val pass = SimpleReader.readLine("Enter bintray API key: ", Some('*')).get.trim
-        if (pass.isEmpty) sys.error("bintray API key required")
-
-        println("saving credentials to %s" format credentialsPath)
-        IO.write(credentialsPath,
-          """realm=Bintray
-             |host=api.bintray.com
-             |user=%s
-             |password=%s""".stripMargin.format(name, pass))
-        readCredentials
+        if (prompt) {
+          println("bintray-sbt requires your bintray credentials.")
+          val name = Prompt("Enter bintray username")
+          if (!name.isDefined) sys.error("bintray username required")
+          val pass = Prompt.descretely("Enter bintray API key")
+          if (!pass.isDefined) sys.error("bintray API key required")
+        
+          Seq(name, pass).flatten match {
+            case Seq(name, pass) =>
+              println("saving credentials to %s" format creds)
+            BintrayCredentials.write(name, pass, creds)
+            ensuredCredentials(creds, prompt)
+          }
+        } else {
+          println("Missing bintray credentials %s. Some bintray features depend on this." format creds)
+          None
+        }
       case creds => creds
-    }
-
-  private def readCredentials: Option[Map[String, String]] =
-    credentialsPath match {
-      case creds if (creds.exists) =>
-        import collection.JavaConversions._
-        val properties = new java.util.Properties
-        IO.load(properties, creds)
-        val map = properties map { case (k,v) => (k.toString, v.toString.trim) } toMap
-        val keys = Seq("realm", "host", "user", "password")
-        val missing = keys.filter(!map.contains(_))
-        if (!missing.isEmpty) sys.error("missing credential properties in %s: %s" format(creds, missing.mkString(", ")))
-        else Some(map)
-      case _ => None
-    }
+    })
 
   private def ensureCredentialsTask =
-    (streams) map {
-      (out) => ensuredCredentials.get
+    (streams, bintrayCredentialsPath) map {
+      (out, creds) => ensuredCredentials(creds).get
     }
 
   def bintrayPublishSettings: Seq[Setting[_]] = Seq(
+    bintrayCredentialsPath := Path.userHome / ".bintray" / ".credentials",
     bintrayRepo := "maven",
     bintrayPackageLabels := Nil,
-    publish <<= publish.dependsOn(ensurePackageTask.dependsOn(ensureCredentialsTask)),
     publishTo <<= publishToBintrayOrDefault,
-    credentials += Credentials(credentialsPath),
-    resolvers <+= mkPackageResolver
+    resolvers <++= appendBintrayResolver,
+    publish <<= publish.dependsOn(ensurePackageTask.dependsOn(ensureCredentialsTask)),
+    credentials <+= bintrayCredentialsPath.map(Credentials(_))
   )
 
   def bintrayResolverSettings: Seq[Setting[_]] = Seq(
