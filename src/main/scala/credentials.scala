@@ -6,7 +6,7 @@ import java.io.File
 object BintrayCredentials {
   val Keys = Seq("realm", "host", "user", "password")
   def template(name: String, password: String) =
-    """realm = Bintray API
+    """realm = Bintray API Realm
       |host = api.bintray.com
       |user = %s
       |password = %s""".stripMargin.format(name, password)
