@@ -3,6 +3,7 @@ package bintray
 import sbt.IO
 import java.io.File
 
+case class BintrayCredentials(user: String, password: String)
 object BintrayCredentials {
   val Keys = Seq("realm", "host", "user", "password")
   def template(name: String, password: String) =
@@ -11,7 +12,7 @@ object BintrayCredentials {
       |user = %s
       |password = %s""".stripMargin.format(name, password)
 
-  def read(path: File): Either[String,Option[Map[String, String]]] =
+  def read(path: File): Either[String,Option[BintrayCredentials]] =
     path match {
       case creds if (creds.exists) =>
         import collection.JavaConversions._
@@ -22,9 +23,9 @@ object BintrayCredentials {
         }.toMap
         val missing = Keys.filter(!mapped.contains(_))
         if (!missing.isEmpty) Left(
-          "missing credential properties in %s: %s"
-            .format(creds, missing.mkString(", ")))
-        else Right(Some(mapped))
+          "missing credential properties %s in %s"
+            .format(missing.mkString(", "), creds))
+        else Right(Some(BintrayCredentials(mapped("user"), mapped("password"))))
       case _ => Right(None)
     }
 

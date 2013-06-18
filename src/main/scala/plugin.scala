@@ -19,13 +19,14 @@ object Plugin extends sbt.Plugin {
   private def ensurePackageTask: Def.Initialize[sbt.Task[Unit]] =
     (bintrayCredentialsPath, bintrayRepo, name, description, bintrayPackageLabels, streams).map {
       case (creds, repo, name, desc, labels, out) =>
-        ensuredCredentials(creds).map { creds =>
-          val bty = Client(creds("user"), creds("password")).repo(creds("user"), repo)
-          val exists =
-            if (bty.get(name)(new FunctionHandler(_.getStatusCode != 404))()) true
-            else bty.createPackage(name, desc, labels:_*)(new FunctionHandler(_.getStatusCode == 201))()
-          if (!exists) sys.error("was not able to find or create a package for %s in repo %s named %s"
-                                 .format(creds("user"), repo, name))
+        ensuredCredentials(creds).map {
+          case BintrayCredentials(user, key) =>
+            val bty = Client(user, key).repo(user, repo)
+            val exists =
+              if (bty.get(name)(new FunctionHandler(_.getStatusCode != 404))()) true
+              else bty.createPackage(name, desc, labels:_*)(new FunctionHandler(_.getStatusCode == 201))()
+            if (!exists) sys.error("was not able to find or create a package for %s in repo %s named %s"
+                                   .format(user, repo, name))
         }.getOrElse("failed to retrieve bintray credentials")
     }
 
@@ -35,8 +36,8 @@ object Plugin extends sbt.Plugin {
     (publishTo, bintrayCredentialsPath, bintrayRepo, name, streams).apply {
       case (provided @ Some(_), _, _, _, out) => provided
       case (_, creds, repo, pkg, out) =>
-        ensuredCredentials(creds, prompt = false).map { creds =>
-          Opts.resolver.publishTo(creds("user"), repo, pkg)
+        ensuredCredentials(creds, prompt = false).map {
+          case BintrayCredentials(user, _) => Opts.resolver.publishTo(user, repo, pkg)
         }
     }
 
@@ -48,12 +49,12 @@ object Plugin extends sbt.Plugin {
           println("bintray credentials %s is malformed".format(err))
           Nil
         }, {
-          _.map { creds => Seq(Opts.resolver.repo(creds("user"), repo)) }
+          _.map { case BintrayCredentials(user, _) => Seq(Opts.resolver.repo(user, repo)) }
            .getOrElse(Nil)
         })
     }
 
-  private def ensuredCredentials(creds: File, prompt: Boolean = true): Option[Map[String, String]] =
+  private def ensuredCredentials(creds: File, prompt: Boolean = true): Option[BintrayCredentials] =
     BintrayCredentials.read(creds).fold(sys.error(_), _ match {
       case None =>
         if (prompt) {
@@ -62,7 +63,7 @@ object Plugin extends sbt.Plugin {
           if (!name.isDefined) sys.error("bintray username required")
           val pass = Prompt.descretely("Enter bintray API key")
           if (!pass.isDefined) sys.error("bintray API key required")
-        
+
           Seq(name, pass).flatten match {
             case Seq(name, pass) =>
               println("saving credentials to %s" format creds)
