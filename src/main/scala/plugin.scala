@@ -16,7 +16,7 @@ object Plugin extends sbt.Plugin {
     "bintrayCredentialsPath", "File containing bintray api credentials")
 
   /** Ensure user-specific bintray package exists */
-  private def ensurePackageTask: Def.Initialize[sbt.Task[Unit]] =
+  private def ensurePackageTask: Def.Initialize[Task[Unit]] =
     (bintrayCredentialsPath, bintrayRepo, name, description, bintrayPackageLabels, streams).map {
       case (creds, repo, name, desc, labels, out) =>
         ensuredCredentials(creds).map {
@@ -37,7 +37,8 @@ object Plugin extends sbt.Plugin {
       case (provided @ Some(_), _, _, _, out) => provided
       case (_, creds, repo, pkg, out) =>
         ensuredCredentials(creds, prompt = false).map {
-          case BintrayCredentials(user, _) => Opts.resolver.publishTo(user, repo, pkg)
+          case BintrayCredentials(user, pass) =>
+            Opts.resolver.publishTo(user, repo, pkg, Client(user, pass).repo(user, repo).get(pkg))
         }
     }
 
