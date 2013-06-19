@@ -67,8 +67,8 @@ object Plugin extends sbt.Plugin {
           Seq(name, pass).flatten match {
             case Seq(name, pass) =>
               println("saving credentials to %s" format creds)
-            BintrayCredentials.write(name, pass, creds)
-            ensuredCredentials(creds, prompt)
+              BintrayCredentials.write(name, pass, creds)
+              ensuredCredentials(creds, prompt)
           }
         } else {
           println("Missing bintray credentials %s. Some bintray features depend on this." format creds)
