@@ -1,7 +1,7 @@
 package bintray
 
 import java.io.File
-import org.apache.ivy.plugins.resolver.{ DependencyResolver, IBiblioResolver }
+import org.apache.ivy.plugins.resolver.IBiblioResolver
 import org.apache.ivy.plugins.repository.{ AbstractRepository, Repository }
 import bintry._
 import dispatch._
