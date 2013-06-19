@@ -9,15 +9,16 @@ object Plugin extends sbt.Plugin {
   import Keys._
 
   val bintrayRepo = SettingKey[String](
-    "bintrayRepo", "Bintry repository to publish to. Defaults to 'maven'")
+    "bintrayRepo", "Bintray repository to publish to. Defaults to 'maven'")
   val bintrayPackageLabels = SettingKey[Seq[String]](
     "bintrayPackageLabels", "List of labels associated with bintray package that will be added on auto package creation")
   val bintrayCredentialsPath = SettingKey[File](
     "bintrayCredentialsPath", "File containing bintray api credentials")
 
   /** Ensure user-specific bintray package exists */
-  private def ensurePackageTask: Def.Initialize[sbt.Task[Unit]] =
-    (bintrayCredentialsPath, bintrayRepo, name, description, bintrayPackageLabels, streams).map {
+  private def ensurePackageTask: Def.Initialize[Task[Unit]] =
+    (bintrayCredentialsPath, bintrayRepo, name,
+     description, bintrayPackageLabels, streams).map {
       case (creds, repo, name, desc, labels, out) =>
         ensuredCredentials(creds).map {
           case BintrayCredentials(user, key) =>
@@ -33,11 +34,14 @@ object Plugin extends sbt.Plugin {
   /** if credentials exists and the build user hasn't defined a publishTo,
    *  set a user-speciic publishTo endpoint */
   private def publishToBintrayOrDefault: Def.Initialize[Option[Resolver]] =
-    (publishTo, bintrayCredentialsPath, bintrayRepo, name, streams).apply {
+    (publishTo, bintrayCredentialsPath,
+     bintrayRepo, name, streams).apply {
       case (provided @ Some(_), _, _, _, out) => provided
       case (_, creds, repo, pkg, out) =>
         ensuredCredentials(creds, prompt = false).map {
-          case BintrayCredentials(user, _) => Opts.resolver.publishTo(user, repo, pkg)
+          case BintrayCredentials(user, pass) =>
+            Opts.resolver.publishTo(user, repo, pkg,
+                                    Client(user, pass).repo(user, repo).get(pkg))
         }
     }
 
@@ -96,5 +100,6 @@ object Plugin extends sbt.Plugin {
     resolvers += Opts.resolver.jcenter
   )
 
-  def bintrySettings: Seq[Setting[_]] = bintrayResolverSettings ++ bintrayPublishSettings
+  def bintrySettings: Seq[Setting[_]] =
+    bintrayResolverSettings ++ bintrayPublishSettings
 }
