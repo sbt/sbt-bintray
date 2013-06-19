@@ -38,4 +38,4 @@ You can save yourself some configuration if you wish to both resolve and publish
 seq(bintraySettings:_*)
 ```
 
-Doug Tangre (softprops) 2013
+Doug Tangren (softprops) 2013
