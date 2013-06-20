@@ -14,6 +14,8 @@ object Plugin extends sbt.Plugin {
     "bintrayPackageLabels", "List of labels associated with bintray package that will be added on auto package creation")
   val bintrayCredentialsPath = SettingKey[File](
     "bintrayCredentialsPath", "File containing bintray api credentials")
+  val bintrayPackageVersions = TaskKey[Unit](
+    "bintrayPackageVersions", "List bintray versions for the current package")
 
   /** Ensure user-specific bintray package exists */
   private def ensurePackageTask: Def.Initialize[Task[Unit]] =
@@ -58,6 +60,27 @@ object Plugin extends sbt.Plugin {
         })
     }
 
+  /** Lists versions of bintray packages corresponding to the current project */
+  private def bintrayPackageVersionsTask: Def.Initialize[Task[Unit]] =
+    (streams, bintrayCredentialsPath, bintrayRepo, name).map {
+      (out, creds, repo, name) =>
+        import org.json4s._
+        ensuredCredentials(creds, prompt = true).map {
+          case BintrayCredentials(user, pass) =>
+            val pkg = Client(user, pass).repo(user, repo).get(name)
+            out.log.info("fetching package versions for package %s" format name)
+            val versions = for {
+              JObject(fs) <- pkg(as.json4s.Json)()
+              ("versions", JArray(versions)) <- fs
+              JString(versionString) <- versions
+            } yield {
+              out.log.info("- %s" format version)
+              version
+            }
+            versions
+        }.getOrElse(Nil)
+    }
+
   private def ensuredCredentials(creds: File, prompt: Boolean = true): Option[BintrayCredentials] =
     BintrayCredentials.read(creds).fold(sys.error(_), _ match {
       case None =>
@@ -96,10 +119,14 @@ object Plugin extends sbt.Plugin {
     credentials <+= bintrayCredentialsPath.map(Credentials(_))
   )
 
+  def bintrayQuerySettings: Seq[Setting[_]] = Seq(
+    bintrayPackageVersions <<= bintrayPackageVersionsTask
+  )
+
   def bintrayResolverSettings: Seq[Setting[_]] = Seq(
     resolvers += Opts.resolver.jcenter
   )
 
-  def bintrySettings: Seq[Setting[_]] =
-    bintrayResolverSettings ++ bintrayPublishSettings
+  def bintraySettings: Seq[Setting[_]] =
+    bintrayResolverSettings ++ bintrayPublishSettings ++ bintrayQuerySettings
 }
