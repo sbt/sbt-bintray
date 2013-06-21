@@ -1,8 +1,13 @@
 # bintray sbt
 
-an sbt interface for publishing and resolving bintray packages
+an sbt interface for publishing and resolving [bintray](https://bintray.com) packages
 
 ## install
+
+## what you need
+
+- an account on [bintray](https://bintray.com) (get on [here](https://bintray.com/signup/index))
+- a desire to build the scala community
 
 todo
 
@@ -16,19 +21,24 @@ If you only need to resolve bintray hosted dependencies you can just add
 seq(bintrayResolverSettings:_*)
 ```
 
-to your build. This will add `bintray.Opts.resolver.jcenter` (the analog to maven central for bintray) to your resolver chain.
+to your build. This will add `bintray.Opts.resolver.jcenter` (the [analog to maven central for bintray](https://bintray.com/bintray/jcenter)) to your resolver chain. JCenter is a bintray aggregation repository. You will find most of what you want there.
 
 ### Publishing
 
-To publish to bintray you need a bintray account. After creating a bintray account you can add
+To publish a package to bintray, you need a bintray account. After creating a bintray account you can add
 
 ```scala
 seq(bintrayPublishSettings:_*)
 ```
 
-To your build. Afterwards you will be prompted for your bintray username and api key. This will generate an sbt credentials
-file under `~/.bintray/.credentials` used to authenticate publishing requests. 
+To your build. If you try to publish at this point, you will be prompted for your bintray username and api key. This will generate an sbt credentials
+file under `~/.bintray/.credentials` used to authenticate publishing requests to bintray.
 
+You can interactively change to bintray credentials used by sbt anytime with
+
+    > bintray:changeCredentials
+
+Note you will need to reload your project afterwards which will reset your `publishTo` setting.
 
 ### Both
 
