@@ -6,7 +6,7 @@ an sbt interface for publishing and resolving [bintray](https://bintray.com) pac
 
 ## what you need
 
-- an account on [bintray](https://bintray.com) (get on [here](https://bintray.com/signup/index))
+- an account on [bintray](https://bintray.com) (get one [here](https://bintray.com/signup/index))
 - a desire to build the scala community
 
 todo
