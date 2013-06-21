@@ -5,9 +5,7 @@ import sbt._
 import bintry._
 import dispatch._, dispatch.Defaults
 
-object Plugin extends sbt.Plugin {
-  import Keys._
-
+object Keys {
   val bintray = TaskKey[String](
     "bintray", "bintray-sbt")
 
@@ -25,6 +23,11 @@ object Plugin extends sbt.Plugin {
 
   val changeCredentials = TaskKey[Unit](
     "changeCredentials", "Change your current bintray credentials")
+}
+
+object Plugin extends sbt.Plugin {
+  import sbt.Keys._
+  import bintray.Keys._
 
   /** Ensure user-specific bintray package exists */
   private def ensurePackageTask: Def.Initialize[Task[Unit]] =
