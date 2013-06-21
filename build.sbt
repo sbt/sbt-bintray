@@ -12,3 +12,4 @@ scalaVersion in Global := "2.10.2-RC2"
 
 libraryDependencies += "me.lessis" %% "bintry" % "0.1.0-SNAPSHOT"
 
+scalacOptions ++= Seq(Opts.compile.deprecation)
