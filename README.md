@@ -27,6 +27,12 @@ seq(bintrayResolverSettings:_*)
 
 to your build. This will add `bintray.Opts.resolver.jcenter` (the [analog to maven central for bintray](https://bintray.com/bintray/jcenter)) to your resolver chain. JCenter is a bintray aggregation repository. You will find most of what you want there. If you wish to add your package to this repository, just link it!
 
+So you want to resolve a package from someone else's repo? Not a problem. Add the following to your sbt build definition
+
+```scala
+resolvers += bintray.Opts.resolver.repo(user, repo)
+```
+
 ### Publishing
 
 To publish a package to bintray, you need a bintray account. After creating a bintray account you can add
