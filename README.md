@@ -2,6 +2,8 @@
 
 an sbt interface for publishing and resolving [bintray](https://bintray.com) packages
 
+always be shipin`
+
 ## install
 
 ## what you need
@@ -9,7 +11,9 @@ an sbt interface for publishing and resolving [bintray](https://bintray.com) pac
 - an account on [bintray](https://bintray.com) (get one [here](https://bintray.com/signup/index))
 - a desire to build the scala community
 
-todo
+Add the following to your sbt `project/plugins.sbt` file
+
+    addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.0")
 
 ## usage
 
@@ -21,7 +25,7 @@ If you only need to resolve bintray hosted dependencies you can just add
 seq(bintrayResolverSettings:_*)
 ```
 
-to your build. This will add `bintray.Opts.resolver.jcenter` (the [analog to maven central for bintray](https://bintray.com/bintray/jcenter)) to your resolver chain. JCenter is a bintray aggregation repository. You will find most of what you want there.
+to your build. This will add `bintray.Opts.resolver.jcenter` (the [analog to maven central for bintray](https://bintray.com/bintray/jcenter)) to your resolver chain. JCenter is a bintray aggregation repository. You will find most of what you want there. If you wish to add your package to this repository, just link it!
 
 ### Publishing
 
