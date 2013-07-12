@@ -5,26 +5,6 @@ import sbt._
 import bintry._
 import dispatch._, dispatch.Defaults
 
-object Keys {
-  val bintray = TaskKey[String](
-    "bintray", "bintray-sbt")
-
-  val repository = SettingKey[String](
-    "repository", "Bintray repository to publish to. Defaults to 'maven'")
-
-  val packageLabels = SettingKey[Seq[String]](
-    "packageLabels", "List of labels associated with your bintray package")
-
-  val credentialsFile = SettingKey[File](
-    "credentialsFile", "File containing bintray api credentials")
-
-  val packageVersions = TaskKey[Seq[String]](
-    "packageVersions", "List bintray versions for the current package")
-
-  val changeCredentials = TaskKey[Unit](
-    "changeCredentials", "Change your current bintray credentials")
-}
-
 object Plugin extends sbt.Plugin {
   import sbt.Keys._
   import bintray.Keys._
@@ -54,8 +34,9 @@ object Plugin extends sbt.Plugin {
     (credentialsFile in bintray,
      repository in bintray,
      name,
-     streams).apply {
-      case (creds, repo, pkg, out) =>
+     streams,
+     state).apply {
+      case (creds, repo, pkg, out, state) =>
         ensuredCredentials(creds, prompt = false).map {
           case BintrayCredentials(user, pass) =>
             Opts.resolver.publishTo(user, repo, pkg,
