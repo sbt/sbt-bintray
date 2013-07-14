@@ -50,6 +50,16 @@ You can interactively change to bintray credentials used by sbt anytime with
 
 Note you will need to reload your project afterwards which will reset your `publishTo` setting.
 
+
+### Labels
+
+The first time you publish a bintray package, this plugin will create the package for you on bintrary. Along with the actual contents
+of the package you can list a publicly viewable list of labels that describe your package. You can assign this with the `packageLabels in bintray` setting key.
+
+### Metadata
+
+In addition to labels you can also assign metadata attributes that expose meta information to package tooling tooling. The can be assigned at the package and the version levels. By default this plugin assigns the a flag indicating this is an sbt plugin to the package and the scala version and optionally sbt version to the package version. You can assign these with the with `packageAttributes in bintray` and `versionAttributes in bintray` setting keys.
+
 ### Both
 
 You can save yourself some configuration if you wish to both resolve and publish by simply adding the following to your build configuration
