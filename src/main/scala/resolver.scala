@@ -12,7 +12,7 @@ case class BintrayRepository(
   def getResource(src: String) = underlying.getResource(src)
   def get(src: String, dest: File) = underlying.get(src, dest)
   override def put(src: File, dest: String, overwrite: Boolean) {
-    println(bty.mvnUpload(dest, src, publish = true)(as.String)())
+    println(bty.mvnUpload(dest, src, publish = true)(as.String)().trim())
   }
   def list(parent: String) = underlying.list(parent)
 }
