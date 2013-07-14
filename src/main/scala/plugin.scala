@@ -16,20 +16,30 @@ object Plugin extends sbt.Plugin {
      name,
      description in bintray,
      packageLabels in bintray,
+     packageAttributes in bintray,
      streams).map {
-      case (creds, repo, name, desc, labels, out) =>
+      case (creds, repo, name, desc, labels, attrs, out) =>
         ensuredCredentials(creds).map {
           case BintrayCredentials(user, key) =>
             val bty = Client(user, key).repo(user, repo)
             val exists =
-              if (bty.get(name)(new FunctionHandler(_.getStatusCode != 404))()) true
-              else bty.createPackage(name, desc, labels:_*)(new FunctionHandler(_.getStatusCode == 201))()
-            if (!exists) sys.error("was not able to find or create a package for %s in repo %s named %s"
+              if (bty.get(name)(new FunctionHandler(_.getStatusCode != 404))()) {
+                // update existing attrs
+                if (!attrs.isEmpty) bty.get(name).attrs.update(attrs.toList:_*)(Noop)()
+                true
+              }
+              else {
+                val created = bty.createPackage(name, desc, labels:_*)(new FunctionHandler(_.getStatusCode == 201))()
+                // assign attrs
+                if (created && !attrs.isEmpty) bty.get(name).attrs.set(attrs.toList:_*)(Noop)()
+                created
+              }
+              if (!exists) sys.error("was not able to find or create a package for %s in repo %s named %s"
                                    .format(user, repo, name))
         }.getOrElse("failed to retrieve bintray credentials")
     }
 
-  /** set a user-speciic publishTo endpoint */
+  /** set a user-specific publishTo endpoint */
   private def publishToBintray: Def.Initialize[Option[Resolver]] =
     (credentialsFile in bintray,
      repository in bintray,
@@ -138,7 +148,17 @@ object Plugin extends sbt.Plugin {
     description in bintray <<= description,
     publishTo in bintray <<= publishToBintray,
     resolvers in bintray <<= appendBintrayResolver,
-    credentials in bintray <<= (credentialsFile in bintray).map(Credentials(_) :: Nil)
+    credentials in bintray <<= (credentialsFile in bintray).map(Credentials(_) :: Nil),
+    packageAttributes in bintray <<= (sbtPlugin, sbtVersion) {
+      (plugin, sbtVersion) =>
+        if (plugin) Map(AttrNames.sbtPlugin -> Seq(BooleanAttr(plugin)))
+        else Map.empty
+    },
+    versionAttributes in bintray <<= (scalaVersion, sbtPlugin, sbtVersion) {
+      (scalaVersion, plugin, sbtVersion) =>
+        val sv = Map(AttrNames.scalaVersion -> Seq(VersionAttr(scalaVersion)))
+        if (plugin) sv ++ Map(AttrNames.sbtVersion-> Seq(VersionAttr(sbtVersion))) else sv
+    }
   ) ++ Seq(
     resolvers <++= resolvers in bintray,
     credentials <++= credentials in bintray,
