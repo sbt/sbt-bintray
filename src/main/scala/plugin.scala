@@ -77,6 +77,7 @@ object Plugin extends sbt.Plugin {
         ensuredCredentials(creds, prompt = true).map {
           case BintrayCredentials(user, pass) =>
             import org.json4s._
+            import JsonImplicits._
             val pkg = Client(user, pass).repo(user, repo).get(name)
             out.log.info("fetching package versions for package %s" format name)
             val versions = for {
