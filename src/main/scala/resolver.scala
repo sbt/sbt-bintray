@@ -1,8 +1,10 @@
 package bintray
 
 import java.io.File
+import java.net.URL
 import org.apache.ivy.plugins.resolver.IBiblioResolver
-import org.apache.ivy.plugins.repository.{ AbstractRepository, Repository }
+import org.apache.ivy.plugins.repository.{ AbstractRepository, Repository, TransferEvent }
+import org.apache.ivy.plugins.repository.url.URLResource
 import bintry._
 import dispatch._
 
@@ -12,7 +14,16 @@ case class BintrayRepository(
   def getResource(src: String) = underlying.getResource(src)
   def get(src: String, dest: File) = underlying.get(src, dest)
   override def put(src: File, dest: String, overwrite: Boolean) {
-    println(bty.mvnUpload(dest, src, publish = true)(as.String)().trim())
+    fireTransferInitiated(new URLResource(new URL(dest)),
+                          TransferEvent.REQUEST_PUT)
+    val (code, body) = bty.mvnUpload(dest, src, publish = true)(
+      new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody) }))()
+    if (code != 201) {
+      println(body)
+      val ex = new RuntimeException("error uploading to %s: %s" format(dest, body))
+      fireTransferError(ex)
+      throw ex
+    }
   }
   def list(parent: String) = underlying.list(parent)
 }
