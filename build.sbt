@@ -2,7 +2,7 @@ organization := "me.lessis"
 
 name := "bintray-sbt"
 
-version := "0.1.0-SNAPSHOT" 
+version := "0.1.0"
 
 sbtPlugin := true
 
@@ -38,3 +38,5 @@ pomExtra := (
     </developer>
   </developers>
 )
+
+seq(lsSettings:_*)
