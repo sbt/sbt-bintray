@@ -1,7 +1,8 @@
 ## initial release
 
-Intoduce your sbt console to [bintry](https://bintray.com/), a free publishing platform that puts you in control of your packages. Bintray allows users to 
-`link` packages to other repositories, say [jcenter](https://bintray.com/bintray/jcenter) an analog to mavencentral for instance.
+Intoduce your sbt console to [bintry](https://bintray.com/), a free publishing platform that puts you in control of your binaries. 
+
+Bintray allows users to `link` packages to other repositories, say [jcenter](https://bintray.com/bintray/jcenter) an analog to mavencentral for instance.
 
 Get going by creating and account on bintray and installing bintray-sbt by adding the following to your sbt plugins.sbt file
 
