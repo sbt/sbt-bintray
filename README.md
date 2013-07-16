@@ -56,8 +56,13 @@ Note you will need to reload your project afterwards which will reset your `publ
 
 Bintray requires a license with a name listed [here](https://bintray.com/docs/api.html#_footnote_1). If you are new to software licenses you may 
 want to grab a coffee and absorb some [well organized information](http://choosealicense.com/) on the topic of choice.
-Sbt already defines a `licenses` setting key. In order to use bintray sbt you must define your `license` key to contain a license with a name matching
+Sbt already defines a `licenses` setting key. In order to use bintray sbt you must define your `licenses` key to contain a license with a name matching
 one of those bintray defines. I recommend [MIT](http://choosealicense.com/licenses/mit/).
+
+
+```scala
+licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+```
 
 #### Labels
 
