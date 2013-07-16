@@ -6,7 +6,7 @@ always be shipin`
 
 ## install
 
-## what you need
+### what you need
 
 - an account on [bintray](https://bintray.com) (get one [here](https://bintray.com/signup/index))
 - a desire to build the scala community
@@ -16,6 +16,13 @@ Add the following to your sbt `project/plugins.sbt` file
 ```scala
 addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.0")
 ```
+
+_NOTE_ this plugin is targeting the next release of sbt, 0.13.0.
+
+This version is in release canidate phase so you will need to add the following to your `project/build.properties` file
+
+sbt.version="0.13.0-RC2"
+
 
 ## usage
 
