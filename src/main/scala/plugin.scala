@@ -9,6 +9,23 @@ object Plugin extends sbt.Plugin {
   import sbt.Keys._
   import bintray.Keys._
 
+  private def publishWithVersionAttrs: Def.Initialize[Task[Unit]] =
+    (publish,
+     credentialsFile in bintray,
+     repository in bintray,
+     name,
+     version,
+     versionAttributes in bintray,
+     streams) mapR {
+      case (Value(_), Value(creds), Value(repo), Value(name), Value(version), Value(versionAttrs), Value(out)) =>
+        ensuredCredentials(creds).map {
+          case BintrayCredentials(user, key) =>
+            val bty = Client(user, key).repo(user, repo)
+            bty.get(name).version(version).attrs.update(versionAttrs.toList:_*)(Noop)()
+        }
+      case _ => () // this indicates Inc(inc: Incomplete) statuses for one or more tasks
+    }
+
   /** Ensure user-specific bintray package exists */
   private def ensurePackageTask: Def.Initialize[Task[Unit]] =
     (credentialsFile in bintray,
@@ -17,8 +34,9 @@ object Plugin extends sbt.Plugin {
      description in bintray,
      packageLabels in bintray,
      packageAttributes in bintray,
+     licenses,
      streams).map {
-      case (creds, repo, name, desc, labels, attrs, out) =>
+      case (creds, repo, name, desc, labels, attrs, licenses, out) =>
         ensuredCredentials(creds).map {
           case BintrayCredentials(user, key) =>
             val bty = Client(user, key).repo(user, repo)
@@ -29,10 +47,11 @@ object Plugin extends sbt.Plugin {
                 true
               }
               else {
-                val created = bty.createPackage(name, desc, labels:_*)(new FunctionHandler(_.getStatusCode == 201))()
-                // assign attrs
-                if (created && !attrs.isEmpty) bty.get(name).attrs.set(attrs.toList:_*)(Noop)()
-                created
+                val created = bty.createPackage(name, desc, licenses.map(_._1), labels:_*)(
+                  new FunctionHandler(_.getStatusCode == 201))()
+                  // assign attrs
+                  if (created && !attrs.isEmpty) bty.get(name).attrs.set(attrs.toList:_*)(Noop)()
+                  created
               }
               if (!exists) sys.error("was not able to find or create a package for %s in repo %s named %s"
                                    .format(user, repo, name))
@@ -80,15 +99,19 @@ object Plugin extends sbt.Plugin {
             import JsonImplicits._
             val pkg = Client(user, pass).repo(user, repo).get(name)
             out.log.info("fetching package versions for package %s" format name)
-            val versions = for {
-              JObject(fs) <- pkg(as.json4s.Json)()
-              ("versions", JArray(versions)) <- fs
-              JString(versionString) <- versions
-            } yield {
-              out.log.info("- %s" format versionString)
-              versionString
-            }
-            versions
+            pkg(EitherHttp({ _ => JNothing}, as.json4s.Json))().fold({ js =>
+              out.log.warn("package does not exist")
+              Nil
+            }, { js =>
+              for {
+                JObject(fs) <- js
+                ("versions", JArray(versions)) <- fs
+                JString(versionString) <- versions
+              } yield {
+                out.log.info("- %s" format versionString)
+                versionString
+              }
+            })
         }.getOrElse(Nil)
     }
 
@@ -107,6 +130,16 @@ object Plugin extends sbt.Plugin {
   private def ensureCredentialsTask =
     (streams, credentialsFile in bintray) map {
       (out, creds) => ensuredCredentials(creds).get
+    }
+
+  private def ensureLicensesTask =
+    (licenses) map {
+      (ls) =>
+        if (ls.isEmpty) sys.error("you must define at least one license for this project. Please choose one or more of %s"
+                                  .format(Licenses.Names.mkString(",")))
+        if (!ls.forall { case (name, _) => Licenses.Names.contains(name) }) sys.error(
+          "One or more of the defined licenses where not amoung the following allowed liceses %s"
+          .format(Licenses.Names.mkString(",")))
     }
 
   private def requestCredentials(
@@ -164,7 +197,8 @@ object Plugin extends sbt.Plugin {
     resolvers <++= resolvers in bintray,
     credentials <++= credentials in bintray,
     publishTo <<= publishTo in bintray,
-    publish <<= publish.dependsOn(ensurePackageTask.dependsOn(ensureCredentialsTask))
+    publish <<= publish.dependsOn(ensurePackageTask.dependsOn(ensureLicensesTask.dependsOn(ensureCredentialsTask))),
+    publish <<= publishWithVersionAttrs
   )
 
   def bintrayCommonSettings: Seq[Setting[_]] = Seq(

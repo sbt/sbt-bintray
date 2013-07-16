@@ -1,6 +1,6 @@
 # bintray sbt
 
-an sbt interface for publishing and resolving [bintray](https://bintray.com) packages
+an sbt interface for publishing and resolving [bintray](https://bintray.com) packages.
 
 always be shipin`
 
@@ -13,7 +13,9 @@ always be shipin`
 
 Add the following to your sbt `project/plugins.sbt` file
 
-    addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.0")
+```scala
+addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.0")
+```
 
 ## usage
 
