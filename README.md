@@ -50,35 +50,57 @@ You can interactively change to bintray credentials used by sbt anytime with
 
 Note you will need to reload your project afterwards which will reset your `publishTo` setting.
 
+### Licenses
+
+Bintray requires a license with a name listed [here](https://bintray.com/docs/api.html#_footnote_1). If you are new to software licenses you may 
+want to grab a coffee and absorb some [well organized information](http://choosealicense.com/) on the topic of choice.
+Sbt already defines a `licenses` setting key. In order to use bintray sbt you must define your `license` key to contain a license with a name matching
+one of those bintray defines. I recommend [MIT](http://choosealicense.com/licenses/mit/).
+
 #### Labels
 
 The first time you publish a bintray package, this plugin will create the package for you on bintrary. Along with the actual contents
-of the package you can list a publicly viewable list of labels that describe your package. You can assign this with the `packageLabels in bintray` setting key.
+of the package, you can list a publicly visible list of labels that related to your package.
+
+You can assign this with the `packageLabels in bintray` setting key.
 
 ```scala
-bintray.Keys.packageLabels in bintray.Keys.bintray := Seq("foo", "bar")
+bintray.Keys.packageLabels in bintray.Keys.bintray := Seq("hipster", "keen")
 ```
 
 #### Metadata
 
-In addition to labels you can also assign metadata attributes that expose meta information to package tooling tooling. The can be assigned at the package and the version levels. By default this plugin assigns the a flag indicating this is an sbt plugin to the package and the scala version and optionally sbt version to the package version. You can assign these with the with `packageAttributes in bintray` and `versionAttributes in bintray` setting keys. These values must be typed an conformed the the [types](https://github.com/softprops/bintry#metadata) bintray [exposes](https://bintray.com/docs/api.html#_attributes)
+In addition to labels, you can also assign metadata attributes that expose information to package tooling tooling. These can be assigned at the package and the version levels. By default, this plugin assigns the a flag indicating this is an sbt plugin to the package and the scala version and optionally sbt version to the package version. You can assign these with the with `packageAttributes in bintray` and `versionAttributes in bintray` setting keys. These values must be typed an conform to the the [types](https://github.com/softprops/bintry#metadata) bintray [exposes](https://bintray.com/docs/api.html#_attributes).
 
 ```scala
 // append custom package attributes
-bintray.Keys.packageAttributes in bintray.Keys.bintray ~= ((_: bintray.AttrMap) ++ Map("my-package-attr" -> Seq(bintry.StringAttr("my-value"))))
+bintray.Keys.packageAttributes in bintray.Keys.bintray ~=
+  ((_: bintray.AttrMap) ++ Map("my-package-attr" -> Seq(bintry.StringAttr("my-value"))))
 ```
 
 ```scala
 // append custom version attributes
-bintray.Keys.versionAttributes in bintray.Keys.bintray ~= ((_: bintray.AttrMap) ++ Map("my-version-attr" -> Seq(bintry.BooleanAttr(true))))
+bintray.Keys.versionAttributes in bintray.Keys.bintray ~=
+  ((_: bintray.AttrMap) ++ Map("my-version-attr" -> Seq(bintry.BooleanAttr(true))))
 ```
 
-### Both
+Note, This interface will likely be subject to change in the future. All changes will be announced and well documented.
+
+##### Other pieces of flair
+
+When publishing for the first time, bintray sbt will create a package for you under your bintray accounts maven repository.
+With using your projects name as the package name and description for your package description. 
+
+### Both Resolving and Publishing
 
 You can save yourself some configuration if you wish to both resolve and publish by simply adding the following to your build configuration
 
 ```scala
 seq(bintraySettings:_*)
 ```
+
+### finding your way around
+
+The easiest way to learn about bintry-sbt is to use the sbt console REPL typing `bintray::<tab>` to discover bintray keys.
 
 Doug Tangren (softprops) 2013
