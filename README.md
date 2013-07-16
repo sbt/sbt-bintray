@@ -52,7 +52,7 @@ You can interactively change to bintray credentials used by sbt anytime with
 
 Note you will need to reload your project afterwards which will reset your `publishTo` setting.
 
-### Licenses
+#### Licenses
 
 Bintray requires a license with a name listed [here](https://bintray.com/docs/api.html#_footnote_1). If you are new to software licenses you may 
 want to grab a coffee and absorb some [well organized information](http://choosealicense.com/) on the topic of choice.
