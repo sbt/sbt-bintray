@@ -21,7 +21,7 @@ _NOTE_ this plugin is targeting the next release of sbt, 0.13.0.
 
 This version is in release canidate phase so you will need to add the following to your `project/build.properties` file
 
-sbt.version="0.13.0-RC2"
+    sbt.version="0.13.0-RC2"
 
 
 ## usage
