@@ -55,7 +55,7 @@ file under `~/.bintray/.credentials` used to authenticate publishing requests to
 
 You can interactively change to bintray credentials used by sbt anytime with
 
-    > bintray:changeCredentials
+    > bintray::changeCredentials
 
 Note you will need to reload your project afterwards which will reset your `publishTo` setting.
 
