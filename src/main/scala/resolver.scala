@@ -16,7 +16,7 @@ case class BintrayRepository(
   def get(src: String, dest: File) = underlying.get(src, dest)
   override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean) {
     println("repo put artifact %s src %s dest %s..." format(artifact, src, dest))
-    val destPath = new URL(dest).getPath.split('/').drop(4).mkString("/")
+    val destPath = new URL(dest).getPath.split('/').drop(5).mkString("/")
     val (code, body) = bty.mvnUpload(destPath, src, publish = true)(
       new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody) }))()
     if (code != 201) {
