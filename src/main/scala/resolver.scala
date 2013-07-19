@@ -12,10 +12,7 @@ import dispatch._
 case class BintrayRepository(
   underlying: Repository, bty: Client#Repo#Package)
   extends AbstractRepository {
-  def getResource(src: String) = underlying.getResource(src)
-  def get(src: String, dest: File) = underlying.get(src, dest)
-  override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean) {
-    println("repo put artifact %s src %s dest %s..." format(artifact, src, dest))
+  override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit = {
     val destPath = new URL(dest).getPath.split('/').drop(5).mkString("/")
     val (code, body) = bty.mvnUpload(destPath, src, publish = true)(
       new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody) }))()
@@ -24,7 +21,8 @@ case class BintrayRepository(
       throw new RuntimeException("error uploading to %s: %s" format(dest, body))
     }
   }
-
+  def getResource(src: String) = underlying.getResource(src)
+  def get(src: String, dest: File) = underlying.get(src, dest)
   def list(parent: String) = underlying.list(parent)
 }
 
@@ -36,8 +34,6 @@ case class BintrayResolver(
   setM2compatible(true)
   setRoot(url)
 
-  override def setRepository(repository: Repository) = {
-    println("setting repository wrapper for %s" format repository)
+  override def setRepository(repository: Repository): Unit =
     super.setRepository(BintrayRepository(repository, bty))
-  }
 }
