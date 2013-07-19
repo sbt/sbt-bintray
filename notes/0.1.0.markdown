@@ -1,14 +1,14 @@
 ## initial release
 
-Intoduce your sbt console to [bintry](https://bintray.com/), a free publishing platform that puts you in control of your binaries. 
+Intoduce your sbt console to [bintray](https://bintray.com/), a free publishing platform that puts you in control of your binaries. 
 
-Bintray allows users to `link` packages to other repositories, say [jcenter](https://bintray.com/bintray/jcenter) an analog to mavencentral for instance.
+Bintray allows users to `link` published packages to other repositories.  You may request your package be linked and aggregating repository like [jcenter](https://bintray.com/bintray/jcenter), an analog to mavencentral, so your users will fewer resolvers in their dependency resolution chain while you still get to maintain ownership over your packages hosting.
 
-Get going by creating and account on bintray and installing bintray-sbt by adding the following to your sbt plugins.sbt file
+Get going by creating and account on bintray and installing bintray-sbt by adding the following to a sbt `plugins.sbt` file in your project's `project` directory.
 
     addSbtPlugin("me.lessis" % "bintry-sbt" % "0.1.0")
     
-And in your build definition
+Then mix in the bintray-sbt settings to your projects build definition, usually a `build.sbt` file in a project's root directory.
 
     seq(bintraySettings:_*)
     
@@ -17,5 +17,9 @@ Not a publisher? No problem. Add the following instead
     seq(bintrayResolverSettings:_*)
     
 This will automatically add `jcenter` to your resolver chain.
+
+Your publisher only publishes to their own bintray repo. Add the following to your build defintion
+
+    bintray.Opts.resolver("bintray-username", "bintray-repo")
 
 For more information see the project [readme](https://github.com/softprops/bintray-sbt#readme)
