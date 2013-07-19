@@ -16,9 +16,9 @@ Not a publisher? No problem. Add the following instead
 
     seq(bintrayResolverSettings:_*)
     
-This will automatically add `jcenter` to your resolver chain.
+This will automatically add [jcenter](https://bintray.com/bintray/jcenter) to your resolver chain.
 
-Your publisher only publishes to their own bintray repo. Add the following to your build defintion
+Your publisher only publishes to their own bintray repo? Add the following to your build definition
 
     bintray.Opts.resolver("bintray-username", "bintray-repo")
 
