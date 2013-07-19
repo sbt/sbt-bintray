@@ -27,6 +27,9 @@ object Keys {
   val changeCredentials = TaskKey[Unit](
     "changeCredentials", "Change your current bintray credentials")
 
+  val whoami = TaskKey[String](
+    "whoami", "Print the name of the currently authenticated bintray user")
+
   /** named used for common package attributes lifted from sbt
    *  build definitions */
   object AttrNames {

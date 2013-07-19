@@ -127,6 +127,19 @@ object Plugin extends sbt.Plugin {
         })
     }
 
+  private def whoamiTask: Def.Initialize[Task[String]] =
+    (streams, credentialsFile in bintray).map {
+      case (out, creds) =>
+        BintrayCredentials.read(creds).fold(sys.error(_), _ match {
+          case None =>
+            out.log.info("nobody")
+            "nobody"
+          case Some(BintrayCredentials(user, _)) =>
+            out.log.info(user)
+            user
+        })
+    }
+
   private def ensureCredentialsTask =
     (streams, credentialsFile in bintray) map {
       (out, creds) => ensuredCredentials(creds).get
@@ -202,7 +215,8 @@ object Plugin extends sbt.Plugin {
   )
 
   def bintrayCommonSettings: Seq[Setting[_]] = Seq(
-    changeCredentials in bintray <<= changeCredentialsTask
+    changeCredentials in bintray <<= changeCredentialsTask,
+    whoami in bintray <<= whoamiTask
   )
 
   def bintrayQuerySettings: Seq[Setting[_]] = Seq(
