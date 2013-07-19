@@ -1,15 +1,13 @@
 # bintray sbt
 
-an sbt interface for publishing and resolving [bintray](https://bintray.com) packages.
-
-always be shipin`
+An sbt interface for publishing and resolving [bintray](https://bintray.com) packages.
 
 ## install
 
 ### what you need
 
 - an account on [bintray](https://bintray.com) (get one [here](https://bintray.com/signup/index))
-- a desire to build the scala community
+- a desire to build a more diverse scala library ecosystem
 
 Add the following to your sbt `project/plugins.sbt` file
 
@@ -22,7 +20,8 @@ _NOTE_ this plugin is targeting the next release of sbt, 0.13.0.
 This version is in release canidate phase so you will need to add the following to your `project/build.properties` file
 
     sbt.version=0.13.0-RC2
-
+    
+And be sure to use the [latest launcher](http://www.scala-sbt.org/0.13.0/docs/Getting-Started/Setup.html#installing-sbt).
 
 ## usage
 
@@ -39,12 +38,12 @@ to your build. This will add `bintray.Opts.resolver.jcenter` (the [analog to mav
 So you want to resolve a package from someone else's repo? Not a problem. Add the following to your sbt build definition
 
 ```scala
-resolvers += bintray.Opts.resolver.repo(user, repo)
+resolvers += bintray.Opts.resolver.repo("user", "repo")
 ```
 
 ### Publishing
 
-To publish a package to bintray, you need a bintray account. After creating a bintray account you can add
+To publish a package to bintray, you need a bintray account. You can do so [here](https://bintray.com/signup/index). After creating a bintray account you can add
 
 ```scala
 seq(bintrayPublishSettings:_*)
@@ -118,3 +117,5 @@ seq(bintraySettings:_*)
 The easiest way to learn about bintry-sbt is to use the sbt console REPL typing `bintray::<tab>` to discover bintray keys.
 
 Doug Tangren (softprops) 2013
+
+always be shipping.
