@@ -4,6 +4,8 @@ name := "bintray-sbt"
 
 version := "0.1.0-SNAPSHOT"
 
+description := "package publisher for bintray.com"
+
 sbtPlugin := true
 
 sbtVersion in Global := "0.13.0-RC2"
@@ -40,3 +42,5 @@ pomExtra := (
 )
 
 seq(lsSettings:_*)
+
+
