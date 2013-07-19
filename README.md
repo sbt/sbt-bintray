@@ -58,7 +58,7 @@ You can interactively change to bintray credentials used by sbt anytime with
 
 Note you will need to reload your project afterwards which will reset your `publishTo` setting.
 
-At anytime you can check you will be authentcated as with the `whoami` setting which will print our your bintray username
+At anytime you can check who you will be authentcated as with the `whoami` setting which will print our your bintray username
 
     > bintray::whoami
 
