@@ -7,9 +7,9 @@ An sbt interface for publishing and resolving [bintray](https://bintray.com) pac
 ### what you need
 
 - an account on [bintray](https://bintray.com) (get one [here](https://bintray.com/signup/index))
-- a desire to build a more diverse scala library ecosystem
+- a desire to build a more diverse Scala library ecosystem
 
-Add the following to your sbt `project/plugins.sbt` file
+Add the following to your sbt `project/plugins.sbt` file:
 
 ```scala
 addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.0")
@@ -17,13 +17,13 @@ addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.0")
 
 _NOTE_ this plugin is targeting the next release of sbt, 0.13.0.
 
-This version is in release canidate phase so you will need to add the following to your `project/build.properties` file
+This version is in release candidate phase so you will need to add the following to your `project/build.properties` file
 
-    sbt.version=0.13.0-RC2
+    sbt.version=0.13.0-RC3
     
 And be sure to use the [latest launcher](http://www.scala-sbt.org/0.13.0/docs/Getting-Started/Setup.html#installing-sbt).
 
-## usage
+## Usage
 
 ### Resolving
 
@@ -58,7 +58,7 @@ You can interactively change to bintray credentials used by sbt anytime with
 
 Note you will need to reload your project afterwards which will reset your `publishTo` setting.
 
-At anytime you can check who you will be authentcated as with the `whoami` setting which will print our your bintray username
+At any time you can check who you will be authenticated as with the `whoami` setting which will print your bintray username
 
     > bintray::whoami
 
@@ -87,7 +87,7 @@ bintray.Keys.packageLabels in bintray.Keys.bintray := Seq("hipster", "keen")
 
 #### Metadata
 
-In addition to labels, you can also assign metadata attributes that expose information to package tooling tooling. These can be assigned at the package and the version levels. By default, this plugin assigns the a flag indicating this is an sbt plugin to the package and the scala version and optionally sbt version to the package version. You can assign these with the with `packageAttributes in bintray` and `versionAttributes in bintray` setting keys. These values must be typed an conform to the the [types](https://github.com/softprops/bintry#metadata) bintray [exposes](https://bintray.com/docs/api.html#_attributes).
+In addition to labels, you can also assign metadata attributes that expose information to package tooling. These can be assigned at the package and the version levels. By default, this plugin assigns a flag indicating "this is an sbt plugin" to the package and the scala version and optionally sbt version to the package version. You can assign these with the `packageAttributes in bintray` and `versionAttributes in bintray` setting keys. These values must be typed and conform to the [types](https://github.com/softprops/bintry#metadata) bintray [exposes](https://bintray.com/docs/api.html#_attributes).
 
 ```scala
 // append custom package attributes
@@ -101,14 +101,14 @@ bintray.Keys.versionAttributes in bintray.Keys.bintray ~=
   ((_: bintray.AttrMap) ++ Map("my-version-attr" -> Seq(bintry.BooleanAttr(true))))
 ```
 
-Note, This interface will likely be subject to change in the future. All changes will be announced and well documented.
+_NOTE_ This interface will likely change in the future. All changes will be announced and well documented.
 
 ##### Other pieces of flair
 
 When publishing for the first time, bintray sbt will create a package for you under your bintray accounts maven repository.
-With using your projects name as the package name and description for your package description. 
+With using your project's name as the package name and description for your package description. 
 
-### Both Resolving and Publishing
+### Both resolving and publishing
 
 You can save yourself some configuration if you wish to both resolve and publish by simply adding the following to your build configuration
 
@@ -116,9 +116,9 @@ You can save yourself some configuration if you wish to both resolve and publish
 seq(bintraySettings:_*)
 ```
 
-### finding your way around
+### Finding your way around
 
-The easiest way to learn about bintry-sbt is to use the sbt console REPL typing `bintray::<tab>` to discover bintray keys.
+The easiest way to learn about bintray-sbt is to use the sbt console REPL typing `bintray::<tab>` to discover bintray keys.
 
 Doug Tangren (softprops) 2013
 
