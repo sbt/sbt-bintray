@@ -30,6 +30,19 @@ object Keys {
   val whoami = TaskKey[String](
     "whoami", "Print the name of the currently authenticated bintray user")
 
+  val ensureLiceneses = TaskKey[Unit](
+    "bintrayEnsureLicenses", "Ensure that the licenses for bintray are valid.")
+  
+  val ensureCredentials = TaskKey[BintrayCredentials](
+    "bintrayEnsureCredentials", "Ensure that the credentials for bintray are valid.")
+
+  val ensureBintrayPackageExists = TaskKey[Unit](
+    "bintrayEnsurePackage", "Ensure that the bintray package exists and is valid.")
+
+  val publishVersionAttributes = TaskKey[Unit](
+    "bintrayPublishVersionAttributes", "Publish the attributes for the current version of this package to bintray.")
+    
+    
   /** named used for common package attributes lifted from sbt
    *  build definitions */
   object AttrNames {

@@ -9,26 +9,27 @@ object Plugin extends sbt.Plugin {
   import sbt.Keys._
   import bintray.Keys._
 
+  // This add the version attributes after publishing.
   private def publishWithVersionAttrs: Def.Initialize[Task[Unit]] =
-    (publish,
-     credentialsFile in bintray,
-     repository in bintray,
-     name,
-     version,
-     versionAttributes in bintray,
-     streams) mapR {
-      case (Value(_), Value(creds), Value(repo), Value(name), Value(version), Value(versionAttrs), Value(out)) =>
-        ensuredCredentials(creds).map {
-          case BintrayCredentials(user, key) =>
-            val bty = Client(user, key).repo(user, repo)
-            bty.get(name).version(version).attrs.update(versionAttrs.toList:_*)(Noop)()
-        }
-      case _ => () // this indicates Inc(inc: Incomplete) statuses for one or more tasks
+    (publish, publishVersionAttributes) apply { (p, attr) =>
+      // Try to publish first, then publish version attributes.
+      p && attr
     }
 
+  private def publishVersionAttributesTask: Def.Initialize[Task[Unit]] =
+    Def.task[Unit]({
+      // Note - We have to assign to a value first, or the temporaries used by pattern matching freak out the sbt macros. 
+      val tmp = ensureCredentials.value
+      val BintrayCredentials(user, key) = tmp
+      val bty = Client(user, key).repo(user, (repository in bintray).value)
+      val attributes = (versionAttributes in bintray).value.toList
+      bty.get(name.value).version(version.value).attrs.update(attributes:_*)(Noop)()
+      ()
+    })
+  
   /** Ensure user-specific bintray package exists */
   private def ensurePackageTask: Def.Initialize[Task[Unit]] =
-    (credentialsFile in bintray,
+    (ensureCredentials,
      repository in bintray,
      name,
      description in bintray,
@@ -36,9 +37,7 @@ object Plugin extends sbt.Plugin {
      packageAttributes in bintray,
      licenses,
      streams).map {
-      case (creds, repo, name, desc, labels, attrs, licenses, out) =>
-        ensuredCredentials(creds).map {
-          case BintrayCredentials(user, key) =>
+      case (BintrayCredentials(user, key), repo, name, desc, labels, attrs, licenses, out) =>
             val bty = Client(user, key).repo(user, repo)
             val exists =
               if (bty.get(name)(new FunctionHandler(_.getStatusCode != 404))()) {
@@ -55,7 +54,6 @@ object Plugin extends sbt.Plugin {
               }
               if (!exists) sys.error("was not able to find or create a package for %s in repo %s named %s"
                                    .format(user, repo, name))
-        }.getOrElse("failed to retrieve bintray credentials")
     }
 
   /** set a user-specific publishTo endpoint */
@@ -64,12 +62,15 @@ object Plugin extends sbt.Plugin {
      repository in bintray,
      name,
      streams,
-     state).apply {
-      case (creds, repo, pkg, out, state) =>
+     version,
+     sbtPlugin).apply {
+      case (creds, repo, pkg, out, version, isSbtPlugin) =>
         ensuredCredentials(creds, prompt = false).map {
           case BintrayCredentials(user, pass) =>
-            Opts.resolver.publishTo(user, repo, pkg,
-                                    Client(user, pass).repo(user, repo).get(pkg))
+            val client = Client(user, pass)
+            val cr = client.repo(user, repo)
+            val cp = cr.get(pkg)
+            Opts.resolver.publishTo(cr, cp, version, isSbtPlugin)
         }
     }
 
@@ -140,12 +141,12 @@ object Plugin extends sbt.Plugin {
         })
     }
 
-  private def ensureCredentialsTask =
+  private def ensureCredentialsTask: Def.Initialize[Task[BintrayCredentials]] =
     (streams, credentialsFile in bintray) map {
       (out, creds) => ensuredCredentials(creds).get
     }
 
-  private def ensureLicensesTask =
+  private def ensureLicensesTask: Def.Initialize[Task[Unit]] =
     (licenses) map {
       (ls) =>
         if (ls.isEmpty) sys.error("you must define at least one license for this project. Please choose one or more of %s"
@@ -205,12 +206,17 @@ object Plugin extends sbt.Plugin {
       (scalaVersion, plugin, sbtVersion) =>
         val sv = Map(AttrNames.scalaVersion -> Seq(VersionAttr(scalaVersion)))
         if (plugin) sv ++ Map(AttrNames.sbtVersion-> Seq(VersionAttr(sbtVersion))) else sv
-    }
+    },
+    ensureLiceneses <<= ensureLicensesTask,
+    ensureCredentials <<= ensureCredentialsTask,
+    ensureBintrayPackageExists <<= ensurePackageTask,
+    publishVersionAttributes <<= publishVersionAttributesTask
   ) ++ Seq(
     resolvers <++= resolvers in bintray,
     credentials <++= credentials in bintray,
     publishTo <<= publishTo in bintray,
-    publish <<= publish.dependsOn(ensurePackageTask.dependsOn(ensureLicensesTask.dependsOn(ensureCredentialsTask))),
+    // We attach this to publish configruation, so that publish-signed in pgp plugin can work.
+    publishConfiguration <<= publishConfiguration.dependsOn(ensureBintrayPackageExists, ensureLiceneses), 
     publish <<= publishWithVersionAttrs
   )
 
