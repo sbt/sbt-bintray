@@ -19,8 +19,8 @@ _NOTE_ this plugin is targeting the next release of sbt, 0.13.0.
 
 This version is in release candidate phase so you will need to add the following to your `project/build.properties` file
 
-    sbt.version=0.13.0-RC3
-    
+    sbt.version=0.13.0-RC4
+
 And be sure to use the [latest launcher](http://www.scala-sbt.org/0.13.0/docs/Getting-Started/Setup.html#installing-sbt).
 
 ## Usage
@@ -64,7 +64,7 @@ At any time you can check who you will be authenticated as with the `whoami` set
 
 #### Licenses
 
-Bintray requires a license with a name listed [here](https://bintray.com/docs/api.html#_footnote_1). If you are new to software licenses you may 
+Bintray requires a license with a name listed [here](https://bintray.com/docs/api.html#_footnote_1). If you are new to software licenses you may
 want to grab a coffee and absorb some [well organized information](http://choosealicense.com/) on the topic of choice.
 Sbt already defines a `licenses` setting key. In order to use bintray sbt you must define your `licenses` key to contain a license with a name matching
 one of those bintray defines. I recommend [MIT](http://choosealicense.com/licenses/mit/).
@@ -106,7 +106,7 @@ _NOTE_ This interface will likely change in the future. All changes will be anno
 ##### Other pieces of flair
 
 When publishing for the first time, bintray sbt will create a package for you under your bintray accounts maven repository.
-With using your project's name as the package name and description for your package description. 
+With using your project's name as the package name and description for your package description.
 
 ### Both resolving and publishing
 
