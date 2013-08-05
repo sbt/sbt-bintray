@@ -195,10 +195,9 @@ object Plugin extends sbt.Plugin {
 
   def bintrayPublishSettings: Seq[Setting[_]] = Seq(
     credentialsFile in bintray := Path.userHome / ".bintray" / ".credentials",
-    // todo: if sbtPlugin is true make this the cannonical sbt org
-    bintrayOrganization in bintray := None,
-    // todo: if sbtPlugin is true make this the cannonical sbt repo
-    repository in bintray := "maven",
+    bintrayOrganization in bintray := { if (sbtPlugin.value) Some("sbt") else None },
+    repository in bintray := { if (sbtPlugin.value) "sbt-plugin-releases" else "maven" },
+    publishMavenStyle := { if (sbtPlugin.value) false else publishMavenStyle.value },
     packageLabels in bintray := Nil,
     description in bintray <<= description,
     publishTo in bintray <<= publishToBintray,

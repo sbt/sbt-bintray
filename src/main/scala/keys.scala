@@ -7,10 +7,10 @@ object Keys {
     "bintray", "bintray-sbt is an interface for the bintray package service")
 
   val bintrayOrganization = SettingKey[Option[String]](
-    "bintrayOrganization", "Bintray organization name to publish to.")
+    "bintrayOrganization", "Bintray organization name to publish to. Defaults to None unless project is an sbtPlugin")
 
   val repository = SettingKey[String](
-    "repository", "Bintray repository to publish to. Defaults to 'maven'")
+    "repository", "Bintray repository to publish to. Defaults to 'maven' unless project is an sbtPlugin")
 
   val packageLabels = SettingKey[Seq[String]](
     "packageLabels", "List of labels associated with your bintray package")
