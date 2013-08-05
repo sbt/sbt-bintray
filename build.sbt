@@ -2,7 +2,7 @@ organization := "me.lessis"
 
 name := "bintray-sbt"
 
-version := "0.1.0"
+version := "0.1.1-SNAPSHOT"
 
 description := "package publisher for bintray.com"
 
@@ -12,7 +12,7 @@ sbtVersion in Global := "0.13.0-RC2"
 
 scalaVersion in Global := "2.10.2"
 
-libraryDependencies += "me.lessis" %% "bintry" % "0.1.2"
+libraryDependencies += "me.lessis" %% "bintry" % "0.2.0-SNAPSHOT"
 
 scalacOptions ++= Seq(Opts.compile.deprecation)
 
