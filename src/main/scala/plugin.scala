@@ -20,8 +20,9 @@ object Plugin extends sbt.Plugin {
     Def.task[Unit]({
       // Note - We have to assign to a value first, or the temporaries used by pattern matching freak out the sbt macros. 
       val tmp = ensureCredentials.value
+      val btyOrg = (bintrayOrganization in bintray).value
       val BintrayCredentials(user, key) = tmp
-      val bty = Client(user, key).repo(user, (repository in bintray).value)
+      val bty = Client(user, key).repo(btyOrg.getOrElse(user), (repository in bintray).value)
       val attributes = (versionAttributes in bintray).value.toList
       bty.get(name.value).version(version.value).attrs.update(attributes:_*)(Noop)()
       ()
@@ -30,6 +31,7 @@ object Plugin extends sbt.Plugin {
   /** Ensure user-specific bintray package exists */
   private def ensurePackageTask: Def.Initialize[Task[Unit]] =
     (ensureCredentials,
+     bintrayOrganization in bintray,
      repository in bintray,
      name,
      description in bintray,
@@ -37,8 +39,8 @@ object Plugin extends sbt.Plugin {
      packageAttributes in bintray,
      licenses,
      streams).map {
-      case (BintrayCredentials(user, key), repo, name, desc, labels, attrs, licenses, out) =>
-            val bty = Client(user, key).repo(user, repo)
+      case (BintrayCredentials(user, key), btyOrg, repo, name, desc, labels, attrs, licenses, out) =>
+            val bty = Client(user, key).repo(btyOrg.getOrElse(user), repo)
             val exists =
               if (bty.get(name)(new FunctionHandler(_.getStatusCode != 404))()) {
                 // update existing attrs
@@ -53,22 +55,23 @@ object Plugin extends sbt.Plugin {
                   created
               }
               if (!exists) sys.error("was not able to find or create a package for %s in repo %s named %s"
-                                   .format(user, repo, name))
+                                   .format(btyOrg.getOrElse(user), repo, name))
     }
 
   /** set a user-specific publishTo endpoint */
   private def publishToBintray: Def.Initialize[Option[Resolver]] =
     (credentialsFile in bintray,
+     bintrayOrganization in bintray,
      repository in bintray,
      name,
      streams,
      version,
      sbtPlugin).apply {
-      case (creds, repo, pkg, out, version, isSbtPlugin) =>
+      case (creds, btyOrg, repo, pkg, out, version, isSbtPlugin) =>
         ensuredCredentials(creds, prompt = false).map {
           case BintrayCredentials(user, pass) =>
             val client = Client(user, pass)
-            val cr = client.repo(user, repo)
+            val cr = client.repo(btyOrg.getOrElse(user), repo)
             val cp = cr.get(pkg)
             Opts.resolver.publishTo(cr, cp, version, isSbtPlugin)
         }
@@ -77,13 +80,14 @@ object Plugin extends sbt.Plugin {
   /** if credentials exist, append a user-specific resolver */
   private def appendBintrayResolver: Def.Initialize[Seq[Resolver]] =
     (credentialsFile in bintray,
+     bintrayOrganization in bintray,
      repository in bintray).apply {
-      (creds, repo) =>
+      (creds, btyOrg, repo) =>
         BintrayCredentials.read(creds).fold({ err =>
           println("bintray credentials %s is malformed".format(err))
           Nil
         }, {
-          _.map { case BintrayCredentials(user, _) => Seq(Opts.resolver.repo(user, repo)) }
+          _.map { case BintrayCredentials(user, _) => Seq(Opts.resolver.repo(btyOrg.getOrElse(user), repo)) }
            .getOrElse(Nil)
         })
     }
@@ -191,6 +195,9 @@ object Plugin extends sbt.Plugin {
 
   def bintrayPublishSettings: Seq[Setting[_]] = Seq(
     credentialsFile in bintray := Path.userHome / ".bintray" / ".credentials",
+    // todo: if sbtPlugin is true make this the cannonical sbt org
+    bintrayOrganization in bintray := None,
+    // todo: if sbtPlugin is true make this the cannonical sbt repo
     repository in bintray := "maven",
     packageLabels in bintray := Nil,
     description in bintray <<= description,
