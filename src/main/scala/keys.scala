@@ -6,6 +6,9 @@ object Keys {
   val bintray = TaskKey[String](
     "bintray", "bintray-sbt is an interface for the bintray package service")
 
+  val bintrayOrganization = SettingKey[Option[String]](
+    "bintrayOrganization", "Bintray organization name to publish to.")
+
   val repository = SettingKey[String](
     "repository", "Bintray repository to publish to. Defaults to 'maven'")
 
