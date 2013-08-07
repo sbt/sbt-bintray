@@ -18,7 +18,6 @@ object Plugin extends sbt.Plugin {
 
   private def publishVersionAttributesTask: Def.Initialize[Task[Unit]] =
     Def.task[Unit]({
-      // Note - We have to assign to a value first, or the temporaries used by pattern matching freak out the sbt macros. 
       val tmp = ensureCredentials.value
       val btyOrg = (bintrayOrganization in bintray).value
       val BintrayCredentials(user, key) = tmp
@@ -76,6 +75,20 @@ object Plugin extends sbt.Plugin {
             Opts.resolver.publishTo(cr, cp, version, isSbtPlugin)
         }
     }
+
+  private def unpublishTask: Def.Initialize[Task[Unit]] =
+    Def.task[Unit]({
+      val tmp = ensureCredentials.value
+      val btyOrg = (bintrayOrganization in bintray).value
+      val BintrayCredentials(user, key) = tmp
+      val bty = Client(user, key).repo(btyOrg.getOrElse(user), (repository in bintray).value)
+      val pkg = name.value
+      val vers = version.value
+      val log = streams.value.log
+      val (status, body) = bty.get(pkg).version(vers).delete(new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody)}))()
+      if (status == 200) log.info("%s@%s was discarded" format(pkg, vers))
+      else sys.error("failed to discard %s%s: %s" format(pkg, vers, body))
+    })
 
   /** if credentials exist, append a user-specific resolver */
   private def appendBintrayResolver: Def.Initialize[Seq[Resolver]] =
@@ -208,21 +221,22 @@ object Plugin extends sbt.Plugin {
         if (plugin) Map(AttrNames.sbtPlugin -> Seq(BooleanAttr(plugin)))
         else Map.empty
     },
-    versionAttributes in bintray <<= (scalaVersion, sbtPlugin, sbtVersion) {
-      (scalaVersion, plugin, sbtVersion) =>
-        val sv = Map(AttrNames.scalaVersion -> Seq(VersionAttr(scalaVersion)))
+    versionAttributes in bintray <<= (crossScalaVersions, sbtPlugin, sbtVersion) {
+      (scalaVersions, plugin, sbtVersion) =>
+        val sv = Map(AttrNames.scalas -> scalaVersions.map(VersionAttr(_)))
         if (plugin) sv ++ Map(AttrNames.sbtVersion-> Seq(VersionAttr(sbtVersion))) else sv
     },
-    ensureLiceneses <<= ensureLicensesTask,
+    ensureLicenses <<= ensureLicensesTask,
     ensureCredentials <<= ensureCredentialsTask,
     ensureBintrayPackageExists <<= ensurePackageTask,
-    publishVersionAttributes <<= publishVersionAttributesTask
+    publishVersionAttributes <<= publishVersionAttributesTask,
+    unpublish in bintray <<= unpublishTask.dependsOn(ensureBintrayPackageExists, ensureLicenses)
   ) ++ Seq(
     resolvers <++= resolvers in bintray,
     credentials <++= credentials in bintray,
     publishTo <<= publishTo in bintray,
     // We attach this to publish configruation, so that publish-signed in pgp plugin can work.
-    publishConfiguration <<= publishConfiguration.dependsOn(ensureBintrayPackageExists, ensureLiceneses), 
+    publishConfiguration <<= publishConfiguration.dependsOn(ensureBintrayPackageExists, ensureLicenses), 
     publish <<= publishWithVersionAttrs
   )
 
