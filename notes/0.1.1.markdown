@@ -2,7 +2,9 @@
 
 - added `bintrayOrganization` key for optionally publishing to a bintray organization rather than a user account
 
-    bintray.Keys.bintrayOrganization in bintray.Keys.bintray := Some("strenth-in-numbers")
+You can set this in your build definition with
+
+    bintray.Keys.bintrayOrganization in bintray.Keys.bintray := Some("strength-in-numbers")
     
 - publishing sbt plugins to bintray is now possible
 
