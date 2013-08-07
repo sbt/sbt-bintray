@@ -14,9 +14,9 @@ In your plugin's build definition, add the following
    
     seq(bintraySettings:_*)   
 
-That's it!
+That's it! Just `publish` as you normally would and you should find your package listed under the [sbt releases repo](https://bintray.com/sbt/sbt-plugin-releases).
 
-Be sure to document the following requirement for consumers of your plugins to include the following resolver. This only needs appended once.
+__Note:__ Be sure to document the following requirement for consumers of your plugins to include the following resolver. This only needs appended once.
 
     resolvers += Resolver.url(
       "bintray-sbt-plugin-releases",
