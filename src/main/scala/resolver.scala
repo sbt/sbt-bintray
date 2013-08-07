@@ -40,8 +40,9 @@ case class BintrayMavenRepository(
     new URL(dest).getPath.split('/').drop(5).mkString("/")
 }
 
-case class BintraySbtPluginRepository(
-  underlying: Repository, bty: Client#Repo#Package#Version)
+case class BintrayIvyRepository(
+  underlying: Repository,
+  bty: Client#Repo#Package#Version)
   extends AbstractRepository {
 
   override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit = {
@@ -60,18 +61,20 @@ case class BintraySbtPluginRepository(
   def list(parent: String) = underlying.list(parent)
 }
 
-case class BintraySbtPluginResolver(
-  name: String, bty: Client#Repo#Package#Version)
+case class BintrayIvyResolver(
+  name: String,
+  bty: Client#Repo#Package#Version,
+  patterns: Seq[String])
   extends URLResolver {
   import collection.JavaConverters._
   setName(name)
   setM2compatible(false)
-  setArtifactPatterns(sbt.Resolver.ivyStylePatterns.artifactPatterns.toList.asJava)
+  setArtifactPatterns(patterns.toList.asJava)
   override def setRepository(repository: Repository): Unit =
-    super.setRepository(BintraySbtPluginRepository(repository, bty))
+    super.setRepository(BintrayIvyRepository(repository, bty))
 }
 
-case class BintrayResolver(
+case class BintrayMavenResolver(
   name: String, rootURL: String, bty: Client#Repo#Package)
   extends IBiblioResolver {
   setName(name)

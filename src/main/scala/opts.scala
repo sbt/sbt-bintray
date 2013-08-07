@@ -11,11 +11,12 @@ object Opts {
     def publishTo(repo: Client#Repo, pkg: Client#Repo#Package, version: String, isSbtPlugin: Boolean = false) = 
       if (isSbtPlugin) {
         new RawRepository(
-          BintraySbtPluginResolver("Bintray-Sbt-Publish-%s-%s-%s" format(repo.sub, repo.repo, pkg.name), 
-             pkg.version(version)))
+          BintrayIvyResolver("Bintray-Sbt-Publish-%s-%s-%s" format(repo.sub, repo.repo, pkg.name),
+             pkg.version(version),
+             sbt.Resolver.ivyStylePatterns.artifactPatterns))
       } else {
         new RawRepository(
-          BintrayResolver("Bintray-Maven-Publish-%s-%s-%s" format(repo.sub, repo.repo, pkg.name),
+          BintrayMavenResolver("Bintray-Maven-Publish-%s-%s-%s" format(repo.sub, repo.repo, pkg.name),
           "https://api.bintray.com/maven/%s/%s/%s".format(
             repo.sub, repo.repo, pkg.name), pkg))
       }
