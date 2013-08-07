@@ -5,11 +5,9 @@ import java.net.URL
 import org.apache.ivy.core.module.descriptor.Artifact
 import org.apache.ivy.plugins.resolver.IBiblioResolver
 import org.apache.ivy.plugins.resolver.URLResolver
-import org.apache.ivy.plugins.repository.{ AbstractRepository, Repository, TransferEvent }
-import org.apache.ivy.plugins.repository.url.URLResource
+import org.apache.ivy.plugins.repository.{ AbstractRepository, Repository }
 import bintry._
 import dispatch._
-import sbt.PatternsBasedRepository
 
 case class BintrayMavenRepository(
   underlying: Repository, bty: Client#Repo#Package)
