@@ -8,9 +8,9 @@
 
 In your plugin's build definition, add the following
 
-   sbtPlugin := true
+    sbtPlugin := true
    
-   seq(bintraySettings:_*)   
+    seq(bintraySettings:_*)   
 
 That's it!
 
