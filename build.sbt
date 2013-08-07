@@ -12,7 +12,7 @@ sbtVersion in Global := "0.13.0-RC2"
 
 scalaVersion in Global := "2.10.2"
 
-libraryDependencies += "me.lessis" %% "bintry" % "0.2.0-SNAPSHOT"
+libraryDependencies += "me.lessis" %% "bintry" % "0.2.0"
 
 scalacOptions ++= Seq(Opts.compile.deprecation)
 
