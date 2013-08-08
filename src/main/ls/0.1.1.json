@@ -1,0 +1,21 @@
+{
+  "organization" : "me.lessis",
+  "name" : "bintray-sbt",
+  "version" : "0.1.1",
+  "description" : "package publisher for bintray.com",
+  "site" : "",
+  "tags" : [ ],
+  "docs" : "",
+  "resolvers" : [ "https://oss.sonatype.org/content/repositories/releases" ],
+  "dependencies" : [ {
+    "organization" : "me.lessis",
+    "name" : "bintry",
+    "version" : "0.2.0"
+  } ],
+  "scalas" : [ "2.10.2" ],
+  "licenses" : [ {
+    "name" : "MIT",
+    "url" : "https://github.com/softprops/bintray-sbt/blob/0.1.1/LICENSE"
+  } ],
+  "sbt" : true
+}

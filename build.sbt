@@ -2,13 +2,13 @@ organization := "me.lessis"
 
 name := "bintray-sbt"
 
-version := "0.1.1-SNAPSHOT"
+version := "0.1.1"
 
 description := "package publisher for bintray.com"
 
 sbtPlugin := true
 
-sbtVersion in Global := "0.13.0-RC2"
+sbtVersion in Global := "0.13.0-RC4"
 
 scalaVersion in Global := "2.10.2"
 
@@ -44,3 +44,4 @@ pomExtra := (
 seq(lsSettings:_*)
 
 
+seq(bintraySettings:_*)

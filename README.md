@@ -12,7 +12,12 @@ An sbt interface for publishing and resolving [bintray](https://bintray.com) pac
 Add the following to your sbt `project/plugins.sbt` file:
 
 ```scala
-addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.0")
+resolvers += Resolver.url(
+  "bintray-sbt-plugin-releases",
+    url("http://dl.bintray.com/content/sbt/sbt-plugin-releases"))(
+        Resolver.ivyStylePatterns)
+
+addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.1")
 ```
 
 _NOTE_ this plugin is targeting the next release of sbt, 0.13.0.
@@ -61,6 +66,14 @@ Note you will need to reload your project afterwards which will reset your `publ
 At any time you can check who you will be authenticated as with the `whoami` setting which will print your bintray username
 
     > bintray::whoami
+
+
+You may optionally wish to publish to a bintray organization instead of your bintray user account. To do so, use the `bintrayOrganization` settting
+in your project's build definition after mixing in `bintraySettings`.
+
+```scala
+bintray.Keys.bintrayOrganization in bintray.Keys.bintray := Some("strength-in-numbers")
+```
 
 #### Licenses
 
@@ -115,6 +128,12 @@ You can save yourself some configuration if you wish to both resolve and publish
 ```scala
 seq(bintraySettings:_*)
 ```
+
+### Unpublishing
+
+It's generally a bad practice to remove a version of a library others may depend on but sometimes you may want test a release with the ability to immediately take it back down if something goes south before others start depending on it. Bintray allows for this flexibility and thus, bintray-sbt does as well. Use the `unpublish` task to unpublish the current version from bintray.
+
+    > bintray::unpublish
 
 ### Finding your way around
 
