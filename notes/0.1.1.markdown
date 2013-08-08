@@ -6,7 +6,7 @@ You can set this in your build definition with
 
     bintray.Keys.bintrayOrganization in bintray.Keys.bintray := Some("strength-in-numbers")
     
-- publishing sbt plugins to [its organization](https://bintray.com/sbt/organization/profile) on bintray is now possible
+- publishing sbt plugins to [its organization](https://bintray.com/sbt/) on bintray is now possible
 
 In your plugin's build definition, add the following
 
