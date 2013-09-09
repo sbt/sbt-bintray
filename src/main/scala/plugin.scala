@@ -17,16 +17,16 @@ object Plugin extends sbt.Plugin {
     }
 
   private def publishVersionAttributesTask: Def.Initialize[Task[Unit]] =
-    Def.task[Unit]({
-      val tmp = ensureCredentials.value
-      val btyOrg = (bintrayOrganization in bintray).value
-      val BintrayCredentials(user, key) = tmp
-      val bty = Client(user, key).repo(btyOrg.getOrElse(user), (repository in bintray).value)
-      val attributes = (versionAttributes in bintray).value.toList
-      bty.get(name.value).version(version.value).attrs.update(attributes:_*)(Noop)()
-      ()
-    })
-  
+    (ensureCredentials, bintrayOrganization in bintray, repository in bintray, versionAttributes in bintray, name, version).map {
+      (ensureCredentials, btyOrg, repository, versionAttributes, name, version) =>
+        val tmp = ensureCredentials
+        val BintrayCredentials(user, key) = tmp
+        val bty = Client(user, key).repo(btyOrg.getOrElse(user), repository)
+        val attributes = versionAttributes.toList
+        bty.get(name).version(version).attrs.update(attributes:_*)(Noop)()
+        ()
+    }
+
   /** Ensure user-specific bintray package exists */
   private def ensurePackageTask: Def.Initialize[Task[Unit]] =
     (ensureCredentials,
@@ -77,18 +77,18 @@ object Plugin extends sbt.Plugin {
     }
 
   private def unpublishTask: Def.Initialize[Task[Unit]] =
-    Def.task[Unit]({
-      val tmp = ensureCredentials.value
-      val btyOrg = (bintrayOrganization in bintray).value
+    (ensureCredentials, bintrayOrganization in bintray, repository in bintray, name, version, streams).map {
+        (ensureCredentials, btyOrg, repository, name, version, streams) =>
+      val tmp = ensureCredentials
       val BintrayCredentials(user, key) = tmp
-      val bty = Client(user, key).repo(btyOrg.getOrElse(user), (repository in bintray).value)
-      val pkg = name.value
-      val vers = version.value
-      val log = streams.value.log
+      val bty = Client(user, key).repo(btyOrg.getOrElse(user), repository)
+      val pkg = name
+      val vers = version
+      val log = streams.log
       val (status, body) = bty.get(pkg).version(vers).delete(new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody)}))()
       if (status == 200) log.info("%s@%s was discarded" format(pkg, vers))
       else sys.error("failed to discard %s%s: %s" format(pkg, vers, body))
-    })
+    }
 
   /** if credentials exist, append a user-specific resolver */
   private def appendBintrayResolver: Def.Initialize[Seq[Resolver]] =
@@ -206,11 +206,13 @@ object Plugin extends sbt.Plugin {
       case creds => creds
     })
 
-  def bintrayPublishSettings: Seq[Setting[_]] = Seq(
-    credentialsFile in bintray := Path.userHome / ".bintray" / ".credentials",
-    bintrayOrganization in bintray := { if (sbtPlugin.value) Some("sbt") else None },
-    repository in bintray := { if (sbtPlugin.value) "sbt-plugin-releases" else "maven" },
-    publishMavenStyle := { if (sbtPlugin.value) false else publishMavenStyle.value },
+  def bintrayPublishSettings: Seq[Setting[_]] = seq(
+    credentialsFile in bintray:= Path.userHome / ".bintray" / ".credentials",
+    bintrayOrganization in bintray <<= sbtPlugin { sbtPlugin => if (sbtPlugin) Some("sbt") else None },
+    repository in bintray <<= sbtPlugin { sbtPlugin => if (sbtPlugin) "sbt-plugin-releases" else "maven" },
+    publishMavenStyle <<= (sbtPlugin, publishMavenStyle) { (sbtPlugin, publishMavenStyle) =>
+      if (sbtPlugin) false else publishMavenStyle
+    },
     packageLabels in bintray := Nil,
     description in bintray <<= description,
     publishTo in bintray <<= publishToBintray,

@@ -4,8 +4,8 @@ import org.json4s.JValue
 
 object JsonImplicits {
   // 2.10 withFilter support (submitted a patch upstream for the next rel)
-  implicit class LiftJValueWithFilter(self: JValue)
-         extends JValueWithFilter(self, _ => true)
+  implicit def LiftJValueWithFilter(self: JValue): JValueWithFilter =
+     new JValueWithFilter(self, _ => true)
   class JValueWithFilter(self: JValue, p: JValue => Boolean) {
     def map[T](f: JValue => T): List[T] =
       self.filter(p).map(f)
