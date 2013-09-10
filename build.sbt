@@ -45,3 +45,5 @@ seq(lsSettings:_*)
 
 
 seq(bintraySettings:_*)
+
+crossBuildingSettings
