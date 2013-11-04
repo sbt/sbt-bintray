@@ -22,11 +22,11 @@ addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.1")
 
 _NOTE_ this plugin is targeting the next release of sbt, 0.13.0.
 
-This version is in release candidate phase so you will need to add the following to your `project/build.properties` file
+You will need to add the following to your `project/build.properties` file if you have multiple versions of sbt installed
 
-    sbt.version=0.13.0-RC5
+    sbt.version=0.13.0
 
-And be sure to use the [latest launcher](http://www.scala-sbt.org/0.13.0/docs/Getting-Started/Setup.html#installing-sbt).
+Be sure to use the [latest launcher](http://www.scala-sbt.org/0.13.0/docs/Getting-Started/Setup.html#installing-sbt).
 
 ## Usage
 
