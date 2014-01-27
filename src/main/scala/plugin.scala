@@ -36,9 +36,8 @@ object Plugin extends sbt.Plugin {
      description in bintray,
      packageLabels in bintray,
      packageAttributes in bintray,
-     licenses,
-     streams).map {
-      case (BintrayCredentials(user, key), btyOrg, repo, name, desc, labels, attrs, licenses, out) =>
+     licenses).map {
+      case (BintrayCredentials(user, key), btyOrg, repo, name, desc, labels, attrs, licenses) =>
             val bty = Client(user, key).repo(btyOrg.getOrElse(user), repo)
             val exists =
               if (bty.get(name)(new FunctionHandler(_.getStatusCode != 404))()) {
@@ -63,16 +62,18 @@ object Plugin extends sbt.Plugin {
      bintrayOrganization in bintray,
      repository in bintray,
      name in bintray,
-     streams,
      version,
+     publishMavenStyle,
      sbtPlugin).apply {
-      case (creds, btyOrg, repo, pkg, out, version, isSbtPlugin) =>
+      case (creds, btyOrg, repo, pkg, version, mvnStyle, isSbtPlugin) =>
         ensuredCredentials(creds, prompt = false).map {
           case BintrayCredentials(user, pass) =>
             val client = Client(user, pass)
             val cr = client.repo(btyOrg.getOrElse(user), repo)
             val cp = cr.get(pkg)
-            Opts.resolver.publishTo(cr, cp, version, isSbtPlugin)
+            if (repository == "maven" && !mvnStyle) println(
+              "you have opted to publish to a repository named 'maven' but publishMavenStyle is assigned to false. The request to publish is likely to fail as a result.")
+            Opts.resolver.publishTo(cr, cp, version, mvnStyle, isSbtPlugin)
         }
     }
 
@@ -135,8 +136,8 @@ object Plugin extends sbt.Plugin {
 
   /** assign credentials or ask for new ones */
   private def changeCredentialsTask: Def.Initialize[Task[Unit]] =
-    (streams, credentialsFile in bintray).map {
-      (out, creds) =>
+    (credentialsFile in bintray).map {
+      creds =>
         BintrayCredentials.read(creds).fold(sys.error(_), _ match {
           case None =>
             saveCredentials(creds)(requestCredentials())
@@ -159,8 +160,8 @@ object Plugin extends sbt.Plugin {
     }
 
   private def ensureCredentialsTask: Def.Initialize[Task[BintrayCredentials]] =
-    (streams, credentialsFile in bintray) map {
-      (out, creds) => ensuredCredentials(creds).get
+    (credentialsFile in bintray) map {
+      creds => ensuredCredentials(creds).get
     }
 
   private def ensureLicensesTask: Def.Initialize[Task[Unit]] =
