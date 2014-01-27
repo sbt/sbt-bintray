@@ -9,7 +9,7 @@ object Plugin extends sbt.Plugin {
   import sbt.Keys._
   import bintray.Keys._
 
-  // This add the version attributes after publishing.
+  // This adds the version attributes after publishing.
   private def publishWithVersionAttrs: Def.Initialize[Task[Unit]] =
     (publish, publishVersionAttributes) apply { (p, attr) =>
       // Try to publish first, then publish version attributes.
@@ -17,7 +17,7 @@ object Plugin extends sbt.Plugin {
     }
 
   private def publishVersionAttributesTask: Def.Initialize[Task[Unit]] =
-    (ensureCredentials, bintrayOrganization in bintray, repository in bintray, versionAttributes in bintray, name, version).map {
+    (ensureCredentials, bintrayOrganization in bintray, repository in bintray, versionAttributes in bintray, name in bintray, version).map {
       (ensureCredentials, btyOrg, repository, versionAttributes, name, version) =>
         val tmp = ensureCredentials
         val BintrayCredentials(user, key) = tmp
@@ -32,7 +32,7 @@ object Plugin extends sbt.Plugin {
     (ensureCredentials,
      bintrayOrganization in bintray,
      repository in bintray,
-     name,
+     name in bintray,
      description in bintray,
      packageLabels in bintray,
      packageAttributes in bintray,
@@ -53,8 +53,8 @@ object Plugin extends sbt.Plugin {
                   if (created && !attrs.isEmpty) bty.get(name).attrs.set(attrs.toList:_*)(Noop)()
                   created
               }
-              if (!exists) sys.error("was not able to find or create a package for %s in repo %s named %s"
-                                   .format(btyOrg.getOrElse(user), repo, name))
+              if (!exists) sys.error(
+                s"was not able to find or create a package for ${btyOrg.getOrElse(user)} in repo $repo named $name")
     }
 
   /** set a user-specific publishTo endpoint */
@@ -62,7 +62,7 @@ object Plugin extends sbt.Plugin {
     (credentialsFile in bintray,
      bintrayOrganization in bintray,
      repository in bintray,
-     name,
+     name in bintray,
      streams,
      version,
      sbtPlugin).apply {
@@ -77,7 +77,7 @@ object Plugin extends sbt.Plugin {
     }
 
   private def unpublishTask: Def.Initialize[Task[Unit]] =
-    (ensureCredentials, bintrayOrganization in bintray, repository in bintray, name, version, streams).map {
+    (ensureCredentials, bintrayOrganization in bintray, repository in bintray, name in bintray, version, streams).map {
         (ensureCredentials, btyOrg, repository, name, version, streams) =>
       val tmp = ensureCredentials
       val BintrayCredentials(user, key) = tmp
@@ -86,8 +86,8 @@ object Plugin extends sbt.Plugin {
       val vers = version
       val log = streams.log
       val (status, body) = bty.get(pkg).version(vers).delete(new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody)}))()
-      if (status == 200) log.info("%s@%s was discarded" format(pkg, vers))
-      else sys.error("failed to discard %s%s: %s" format(pkg, vers, body))
+      if (status == 200) log.info(s"pkg@$vers was discarded")
+      else sys.error(s"failed to discard $pkg@$vers: $body")
     }
 
   /** if credentials exist, append a user-specific resolver */
@@ -109,14 +109,14 @@ object Plugin extends sbt.Plugin {
   private def packageVersionsTask: Def.Initialize[Task[Seq[String]]] =
     (streams,
      credentialsFile in bintray,
-     repository in bintray, name).map {
+     repository in bintray, name in bintray).map {
       (out, creds, repo, name) =>
         ensuredCredentials(creds, prompt = true).map {
           case BintrayCredentials(user, pass) =>
             import org.json4s._
             import JsonImplicits._
             val pkg = Client(user, pass).repo(user, repo).get(name)
-            out.log.info("fetching package versions for package %s" format name)
+            out.log.info(s"fetching package versions for package $name")
             pkg(EitherHttp({ _ => JNothing}, as.json4s.Json))().fold({ js =>
               out.log.warn("package does not exist")
               Nil
@@ -126,7 +126,7 @@ object Plugin extends sbt.Plugin {
                 ("versions", JArray(versions)) <- fs
                 JString(versionString) <- versions
               } yield {
-                out.log.info("- %s" format versionString)
+                out.log.info(s"- $versionString")
                 versionString
               }
             })
@@ -148,14 +148,14 @@ object Plugin extends sbt.Plugin {
   private def whoamiTask: Def.Initialize[Task[String]] =
     (streams, credentialsFile in bintray).map {
       case (out, creds) =>
-        BintrayCredentials.read(creds).fold(sys.error(_), _ match {
+        val is = BintrayCredentials.read(creds).fold(sys.error(_), _ match {
           case None =>
-            out.log.info("nobody")
             "nobody"
           case Some(BintrayCredentials(user, _)) =>
-            out.log.info(user)
             user
         })
+        out.log.info(is)
+        is
     }
 
   private def ensureCredentialsTask: Def.Initialize[Task[BintrayCredentials]] =
@@ -169,8 +169,7 @@ object Plugin extends sbt.Plugin {
         if (ls.isEmpty) sys.error("you must define at least one license for this project. Please choose one or more of %s"
                                   .format(Licenses.Names.mkString(",")))
         if (!ls.forall { case (name, _) => Licenses.Names.contains(name) }) sys.error(
-          "One or more of the defined licenses where not amoung the following allowed liceses %s"
-          .format(Licenses.Names.mkString(",")))
+          s"One or more of the defined licenses where not amoung the following allowed liceses ${Licenses.Names.mkString(",")}")
     }
 
   private def requestCredentials(
@@ -186,7 +185,7 @@ object Plugin extends sbt.Plugin {
   }
 
   private def saveCredentials(to: File)(creds: (String, String)) = {
-    println("saving credentials to %s" format to)
+    println(s"saving credentials to $to")
     val (name, pass) = creds
     BintrayCredentials.write(name, pass, to)
     println("reload project for publishTo to take effect")
@@ -200,14 +199,15 @@ object Plugin extends sbt.Plugin {
           saveCredentials(creds)(requestCredentials())
           ensuredCredentials(creds, prompt)
         } else {
-          println("Missing bintray credentials %s. Some bintray features depend on this." format creds)
+          println(s"Missing bintray credentials $creds. Some bintray features depend on this.")
           None
         }
       case creds => creds
     })
 
-  def bintrayPublishSettings: Seq[Setting[_]] = seq(
+  def bintrayPublishSettings: Seq[Setting[_]] = Seq(
     credentialsFile in bintray in Global := Path.userHome / ".bintray" / ".credentials",
+    name in bintray := moduleName.value,
     bintrayOrganization in bintray in Global <<= sbtPlugin { sbtPlugin => if (sbtPlugin) Some("sbt") else None },
     repository in bintray in Global <<= sbtPlugin { sbtPlugin => if (sbtPlugin) "sbt-plugin-releases" else "maven" },
     publishMavenStyle <<= (sbtPlugin, publishMavenStyle) { (sbtPlugin, publishMavenStyle) =>
