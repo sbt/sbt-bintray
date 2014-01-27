@@ -38,22 +38,22 @@ object Plugin extends sbt.Plugin {
      packageAttributes in bintray,
      licenses).map {
       case (BintrayCredentials(user, key), btyOrg, repo, name, desc, labels, attrs, licenses) =>
-            val bty = Client(user, key).repo(btyOrg.getOrElse(user), repo)
-            val exists =
-              if (bty.get(name)(new FunctionHandler(_.getStatusCode != 404))()) {
-                // update existing attrs
-                if (!attrs.isEmpty) bty.get(name).attrs.update(attrs.toList:_*)(Noop)()
-                true
-              }
-              else {
-                val created = bty.createPackage(name, desc, licenses.map(_._1), labels:_*)(
-                  new FunctionHandler(_.getStatusCode == 201))()
-                  // assign attrs
-                  if (created && !attrs.isEmpty) bty.get(name).attrs.set(attrs.toList:_*)(Noop)()
-                  created
-              }
-              if (!exists) sys.error(
-                s"was not able to find or create a package for ${btyOrg.getOrElse(user)} in repo $repo named $name")
+        val bty = Client(user, key).repo(btyOrg.getOrElse(user), repo)
+        val exists =
+          if (bty.get(name)(new FunctionHandler(_.getStatusCode != 404))()) {
+            // update existing attrs
+            if (!attrs.isEmpty) bty.get(name).attrs.update(attrs.toList:_*)(Noop)()
+            true
+          }
+          else {
+            val created = bty.createPackage(name, desc, licenses.map(_._1), labels:_*)(
+              new FunctionHandler(_.getStatusCode == 201))()
+            // assign attrs
+            if (created && !attrs.isEmpty) bty.get(name).attrs.set(attrs.toList:_*)(Noop)()
+            created
+          }
+        if (!exists) sys.error(
+          s"was not able to find or create a package for ${btyOrg.getOrElse(user)} in repo $repo named $name")
     }
 
   /** set a user-specific publishTo endpoint */
@@ -71,8 +71,8 @@ object Plugin extends sbt.Plugin {
             val client = Client(user, pass)
             val cr = client.repo(btyOrg.getOrElse(user), repo)
             val cp = cr.get(pkg)
-            if (repository == "maven" && !mvnStyle) println(
-              "you have opted to publish to a repository named 'maven' but publishMavenStyle is assigned to false. The request to publish is likely to fail as a result.")
+            if (repo == "maven" && !mvnStyle) println(
+              "you have opted to publish to a repository named 'maven' but publishMavenStyle is assigned to false. This may result in unexpected behavior")
             Opts.resolver.publishTo(cr, cp, version, mvnStyle, isSbtPlugin)
         }
     }
@@ -87,7 +87,7 @@ object Plugin extends sbt.Plugin {
       val vers = version
       val log = streams.log
       val (status, body) = bty.get(pkg).version(vers).delete(new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody)}))()
-      if (status == 200) log.info(s"pkg@$vers was discarded")
+      if (status == 200) log.info(s"$pkg@$vers was discarded")
       else sys.error(s"failed to discard $pkg@$vers: $body")
     }
 
