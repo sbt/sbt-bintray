@@ -1,6 +1,7 @@
 package bintray
 
 import org.json4s.JValue
+import scala.language.implicitConversions
 
 object JsonImplicits {
   // 2.10 withFilter support (submitted a patch upstream for the next rel)
