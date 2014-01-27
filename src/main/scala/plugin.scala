@@ -166,7 +166,7 @@ object Plugin extends sbt.Plugin {
 
   private def ensureLicensesTask: Def.Initialize[Task[Unit]] =
     (licenses) map {
-      (ls) =>
+      ls =>
         if (ls.isEmpty) sys.error("you must define at least one license for this project. Please choose one or more of %s"
                                   .format(Licenses.Names.mkString(",")))
         if (!ls.forall { case (name, _) => Licenses.Names.contains(name) }) sys.error(
