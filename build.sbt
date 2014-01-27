@@ -2,19 +2,15 @@ organization := "me.lessis"
 
 name := "bintray-sbt"
 
-version := "0.1.1"
+version := "0.1.2-SNAPSHOT"
 
 description := "package publisher for bintray.com"
 
 sbtPlugin := true
 
-sbtVersion in Global := "0.13.0-RC4"
-
-scalaVersion in Global := "2.10.2"
-
 libraryDependencies += "me.lessis" %% "bintry" % "0.2.0"
 
-scalacOptions ++= Seq(Opts.compile.deprecation)
+scalacOptions ++= Seq(Opts.compile.deprecation, "-feature")
 
 resolvers += Resolver.sonatypeRepo("releases")
 
