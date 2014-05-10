@@ -8,7 +8,7 @@ description := "package publisher for bintray.com"
 
 sbtPlugin := true
 
-libraryDependencies += "me.lessis" %% "bintry" % "0.2.0"
+libraryDependencies += "me.lessis" %% "bintry" % "0.3.0-SNAPSHOT"
 
 scalacOptions ++= Seq(Opts.compile.deprecation, "-feature")
 
@@ -38,7 +38,6 @@ pomExtra := (
 )
 
 seq(lsSettings:_*)
-
 
 seq(bintraySettings:_*)
 
