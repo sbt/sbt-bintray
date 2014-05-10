@@ -10,10 +10,10 @@ object Opts {
 
     def publishTo(repo: Client#Repo, pkg: Client#Repo#Package, version: String, mvnStyle: Boolean = true, isSbtPlugin: Boolean = false) =
       if (mvnStyle) new RawRepository(
-        BintrayMavenResolver(s"Bintray-Maven-Publish-${repo.sub}-${repo.repo}-${pkg.name}",
-                             s"https://api.bintray.com/maven/${repo.sub}/${repo.repo}/${repo.repo}", pkg))
+        BintrayMavenResolver(s"Bintray-Maven-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
+                             s"https://api.bintray.com/maven/${repo.subject}/${repo.repo}/${repo.repo}", pkg))
       else new RawRepository(
-        BintrayIvyResolver(s"Bintray-${if (isSbtPlugin) "Sbt" else "Ivy"}-Publish-${repo.sub}-${repo.repo}-${pkg.name}",
+        BintrayIvyResolver(s"Bintray-${if (isSbtPlugin) "Sbt" else "Ivy"}-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
                            pkg.version(version),
                            sbt.Resolver.ivyStylePatterns.artifactPatterns))
 

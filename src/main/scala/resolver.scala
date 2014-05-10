@@ -6,6 +6,9 @@ import org.apache.ivy.core.module.descriptor.Artifact
 import org.apache.ivy.plugins.resolver.IBiblioResolver
 import org.apache.ivy.plugins.resolver.URLResolver
 import org.apache.ivy.plugins.repository.{ AbstractRepository, Repository }
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 import bintry._
 import dispatch._
 
@@ -15,8 +18,8 @@ case class BintrayMavenRepository(
 
   override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit = {
     val destPath = transform(dest)
-    val (code, body) = bty.mvnUpload(destPath, src, publish = true)(
-      new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody) }))()
+    val (code, body) = Await.result(bty.mvnUpload(destPath, src, publish = true)(
+      new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody) })), Duration.Inf)
     if (code != 201) {
       println(body)
       throw new RuntimeException("error uploading to %s: %s" format(dest, body))
@@ -44,8 +47,8 @@ case class BintrayIvyRepository(
   extends AbstractRepository {
 
   override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit = {
-    val (code, body) = bty.upload(dest, src, publish = true)(
-      new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody) }))()
+    val (code, body) = Await.result(bty.upload(dest, src, publish = true)(
+      new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody) })), Duration.Inf)
     if (code != 201) {
       println(body)
       throw new RuntimeException("error uploading to %s: %s" format(dest, body))

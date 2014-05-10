@@ -47,6 +47,12 @@ object Keys {
 
   val unpublish = TaskKey[Unit](
     "unpublish", "Unpublishes a version of package on bintray")
+
+  val remoteSign = TaskKey[Unit](
+    "remoteSign", "PGP sign artifacts remotely. (See also https://bintray.com/docs/uploads/uploads_gpgsigning.html)")
+
+  val syncCentral = TaskKey[Unit](
+    "syncCentral", "Sync published artifacts with maven central")
     
   /** named used for common package attributes lifted from sbt
    *  build definitions */

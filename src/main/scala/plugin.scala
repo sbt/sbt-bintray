@@ -3,7 +3,10 @@ package bintray
 import java.io.File
 import sbt._
 import bintry._
-import dispatch._, dispatch.Defaults
+import dispatch._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 object Plugin extends sbt.Plugin {
   import sbt.Keys._
@@ -23,8 +26,7 @@ object Plugin extends sbt.Plugin {
         val BintrayCredentials(user, key) = tmp
         val bty = Client(user, key).repo(btyOrg.getOrElse(user), repository)
         val attributes = versionAttributes.toList
-        bty.get(name).version(version).attrs.update(attributes:_*)(Noop)()
-        ()
+        Await.ready(bty.get(name).version(version).attrs.update(attributes:_*)(Noop), Duration.Inf)
     }
 
   /** Ensure user-specific bintray package exists */
@@ -40,16 +42,16 @@ object Plugin extends sbt.Plugin {
       case (BintrayCredentials(user, key), btyOrg, repo, name, desc, labels, attrs, licenses) =>
         val bty = Client(user, key).repo(btyOrg.getOrElse(user), repo)
         val exists =
-          if (bty.get(name)(new FunctionHandler(_.getStatusCode != 404))()) {
+          if (Await.result(bty.get(name)(new FunctionHandler(_.getStatusCode != 404)), Duration.Inf)) {
             // update existing attrs
-            if (!attrs.isEmpty) bty.get(name).attrs.update(attrs.toList:_*)(Noop)()
+            if (!attrs.isEmpty) Await.ready(bty.get(name).attrs.update(attrs.toList:_*)(Noop), Duration.Inf)
             true
-          }
-          else {
-            val created = bty.createPackage(name, desc, licenses.map(_._1), labels:_*)(
-              new FunctionHandler(_.getStatusCode == 201))()
+          } else {
+            val created = Await.result(bty.createPackage(name).desc(desc).licenses(licenses.map(_._1):_*).labels(labels:_*)(
+              new FunctionHandler(_.getStatusCode == 201)), Duration.Inf)
             // assign attrs
-            if (created && !attrs.isEmpty) bty.get(name).attrs.set(attrs.toList:_*)(Noop)()
+            if (created && !attrs.isEmpty) Await.ready(
+              bty.get(name).attrs.set(attrs.toList:_*)(Noop), Duration.Inf)
             created
           }
         if (!exists) sys.error(
@@ -86,9 +88,40 @@ object Plugin extends sbt.Plugin {
       val pkg = name
       val vers = version
       val log = streams.log
-      val (status, body) = bty.get(pkg).version(vers).delete(new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody)}))()
+      val (status, body) = Await.result(
+        bty.get(pkg).version(vers).delete(new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody)})), Duration.Inf)
       if (status == 200) log.info(s"$pkg@$vers was discarded")
       else sys.error(s"failed to discard $pkg@$vers: $body")
+    }
+
+  private def remoteSignTask: Def.Initialize[Task[Unit]] =
+    (ensureCredentials, bintrayOrganization in bintray, repository in bintray, name in bintray, version, streams).map {
+      (ensureCredentials, btyOrg, repository, name, version, streams) =>
+      val tmp = ensureCredentials
+      val BintrayCredentials(user, key) = tmp
+      val bty = Client(user, key).repo(btyOrg.getOrElse(user), repository)
+      val pkg = name
+      val vers = version
+      val log = streams.log
+      val (status, body) = Await.result(
+        bty.get(pkg).version(vers).sign("passphrase")(new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody)})), Duration.Inf)
+      if (status == 200) log.info(s"$pkg@$vers was signed")
+      else sys.error(s"failed to sign $pkg@$vers: $body")
+    }
+
+  private def syncCentralTask: Def.Initialize[Task[Unit]] =
+    (ensureCredentials, bintrayOrganization in bintray, repository in bintray, name in bintray, version, streams).map {
+      (ensureCredentials, btyOrg, repository, name, version, streams) =>
+      val tmp = ensureCredentials
+      val BintrayCredentials(user, key) = tmp
+      val bty = Client(user, key).repo(btyOrg.getOrElse(user), repository)
+      val pkg = name
+      val vers = version
+      val log = streams.log
+      val (status, body) = Await.result(
+        bty.get(pkg).version(vers).syncCentral("sonauser", "sonapass")(new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody)})), Duration.Inf)
+      if (status == 200) log.info(s"$pkg@$vers was synced with maven central")
+      else sys.error(s"failed to sync $pkg@$vers with maven central: $body")
     }
 
   /** if credentials exist, append a user-specific resolver */
@@ -115,10 +148,9 @@ object Plugin extends sbt.Plugin {
         ensuredCredentials(creds, prompt = true).map {
           case BintrayCredentials(user, pass) =>
             import org.json4s._
-            import JsonImplicits._
             val pkg = Client(user, pass).repo(user, repo).get(name)
             out.log.info(s"fetching package versions for package $name")
-            pkg(EitherHttp({ _ => JNothing}, as.json4s.Json))().fold({ js =>
+            Await.result(pkg(EitherHttp({ _ => JNothing}, as.json4s.Json)), Duration.Inf).fold({ js =>
               out.log.warn("package does not exist")
               Nil
             }, { js =>
@@ -167,8 +199,9 @@ object Plugin extends sbt.Plugin {
   private def ensureLicensesTask: Def.Initialize[Task[Unit]] =
     (licenses) map {
       ls =>
-        if (ls.isEmpty) sys.error("you must define at least one license for this project. Please choose one or more of %s"
-                                  .format(Licenses.Names.mkString(",")))
+        if (ls.isEmpty) sys.error(
+          "you must define at least one license for this project. Please choose one or more of %s"
+            .format(Licenses.Names.mkString(",")))
         if (!ls.forall { case (name, _) => Licenses.Names.contains(name) }) sys.error(
           s"One or more of the defined licenses where not amoung the following allowed liceses ${Licenses.Names.mkString(",")}")
     }
@@ -233,7 +266,9 @@ object Plugin extends sbt.Plugin {
     ensureCredentials <<= ensureCredentialsTask,
     ensureBintrayPackageExists <<= ensurePackageTask,
     publishVersionAttributes <<= publishVersionAttributesTask,
-    unpublish in bintray <<= unpublishTask.dependsOn(ensureBintrayPackageExists, ensureLicenses)
+    unpublish in bintray <<= unpublishTask.dependsOn(ensureBintrayPackageExists, ensureLicenses),
+    remoteSign in bintray <<= remoteSignTask,
+    syncCentral in bintray <<= syncCentralTask
   ) ++ Seq(
     resolvers <++= resolvers in bintray,
     credentials <++= credentials in bintray,
