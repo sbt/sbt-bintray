@@ -14,7 +14,7 @@ object BintrayCredentials {
 
   def read(path: File): Either[String,Option[BintrayCredentials]] =
     path match {
-      case creds if (creds.exists) =>
+      case creds if creds.exists =>
         import collection.JavaConversions._
         val properties = new java.util.Properties
         IO.load(properties, creds)
