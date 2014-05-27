@@ -14,8 +14,8 @@ scalacOptions ++= Seq(Opts.compile.deprecation, "-feature")
 
 resolvers += Resolver.sonatypeRepo("releases")
 
-licenses <++= (version)(v => Seq("MIT" -> url(
-  "https://github.com/softprops/bintray-sbt/blob/%s/LICENSE".format(v))))
+licenses <++= (name, version)((name, v) => Seq("MIT" -> url(
+  "https://github.com/softprops/%s/blob/%s/LICENSE".format(name, v))))
 
 publishTo := Some(Classpaths.sbtPluginReleases)
 
