@@ -9,6 +9,9 @@ object Keys {
   val bintrayOrganization = SettingKey[Option[String]](
     "bintrayOrganization", "Bintray organization name to publish to. Defaults to None unless project is an sbtPlugin")
 
+  val bintrayCredentials = SettingKey[Option[BintrayCredentials]](
+    "bintrayCredentials", "A set of sbt.Credentials for bintray publishing")
+
   val repository = SettingKey[String](
     "repository", "Bintray repository to publish to. Defaults to 'maven' unless project is an sbtPlugin")
 
@@ -35,8 +38,8 @@ object Keys {
 
   val ensureLicenses = TaskKey[Unit](
     "bintrayEnsureLicenses", "Ensure that the licenses for bintray are valid.")
-  
-  val ensureCredentials = TaskKey[BintrayCredentials](
+ 
+   val ensureCredentials = TaskKey[BintrayCredentials](
     "bintrayEnsureCredentials", "Ensure that the credentials for bintray are valid.")
 
   val ensureBintrayPackageExists = TaskKey[Unit](
@@ -49,10 +52,10 @@ object Keys {
     "unpublish", "Unpublishes a version of package on bintray")
 
   val remoteSign = TaskKey[Unit](
-    "remoteSign", "PGP sign artifacts remotely. (See also https://bintray.com/docs/uploads/uploads_gpgsigning.html)")
+    "remoteSign", "PGP sign artifacts hosted remotely on bintray. (See also https://bintray.com/docs/uploads/uploads_gpgsigning.html)")
 
-  val syncCentral = TaskKey[Unit](
-    "syncCentral", "Sync published artifacts with maven central")
+  val syncMavenCentral = TaskKey[Unit](
+    "syncMavenCentral", "Sync bintray-published artifacts with maven central")
     
   /** named used for common package attributes lifted from sbt
    *  build definitions */
