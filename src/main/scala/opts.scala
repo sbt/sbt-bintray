@@ -1,8 +1,7 @@
 package bintray
 
 import sbt.{ MavenRepository, RawRepository }
-import sbt._
-import bintry._
+import bintry.Client
 
 object Opts {
   object resolver {
