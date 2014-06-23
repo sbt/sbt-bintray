@@ -15,17 +15,15 @@ case class BintrayMavenRepository(
   underlying: Repository, bty: Client#Repo#Package)
   extends AbstractRepository with DispatchHandlers {
 
-  override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit = {
-    val destPath = transform(dest)
+  override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit =
     Await.result(
-      bty.mvnUpload(destPath, src).publish(true)(asStatusAndBody),
+      bty.mvnUpload(transform(dest), src).publish(true)(asStatusAndBody),
       Duration.Inf) match {
         case (201, _) =>
         case (_, fail) =>
           println(fail)
           throw new RuntimeException(s"error uploading to $dest: $fail")
       }
-  }
 
   def getResource(src: String) = underlying.getResource(src)
 
@@ -48,7 +46,7 @@ case class BintrayIvyRepository(
   extends AbstractRepository with DispatchHandlers {
 
   override def put(
-    artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit = {
+    artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit =
     Await.result(
       bty.upload(dest, src).publish(true)(asStatusAndBody),
       Duration.Inf) match {
@@ -57,7 +55,6 @@ case class BintrayIvyRepository(
           println(fail)
           throw new RuntimeException(s"error uploading to $dest: $fail")
       }
-  }
 
   def getResource(src: String) = underlying.getResource(src)
 
