@@ -9,17 +9,17 @@ import org.apache.ivy.plugins.repository.{ AbstractRepository, Repository }
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import bintry._
-import dispatch._
+import bintry.Client
 
 case class BintrayMavenRepository(
   underlying: Repository, bty: Client#Repo#Package)
-  extends AbstractRepository {
+  extends AbstractRepository with DispatchHandlers {
 
   override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit = {
     val destPath = transform(dest)
-    val (code, body) = Await.result(bty.mvnUpload(destPath, src, publish = true)(
-      new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody) })), Duration.Inf)
+    val (code, body) = Await.result(
+      bty.mvnUpload(destPath, src).publish(true)(asStatusAndBody),
+      Duration.Inf)
     if (code != 201) {
       println(body)
       throw new RuntimeException("error uploading to %s: %s" format(dest, body))
@@ -44,11 +44,13 @@ case class BintrayMavenRepository(
 case class BintrayIvyRepository(
   underlying: Repository,
   bty: Client#Repo#Package#Version)
-  extends AbstractRepository {
+  extends AbstractRepository with DispatchHandlers {
 
-  override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit = {
-    val (code, body) = Await.result(bty.upload(dest, src, publish = true)(
-      new FunctionHandler({ r => (r.getStatusCode, r.getResponseBody) })), Duration.Inf)
+  override def put(
+    artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit = {
+    val (code, body) = Await.result(
+      bty.upload(dest, src).publish(true)(asStatusAndBody),
+      Duration.Inf)
     if (code != 201) {
       println(body)
       throw new RuntimeException("error uploading to %s: %s" format(dest, body))
@@ -71,6 +73,7 @@ case class BintrayIvyResolver(
   setName(name)
   setM2compatible(false)
   setArtifactPatterns(patterns.toList.asJava)
+
   override def setRepository(repository: Repository): Unit =
     super.setRepository(BintrayIvyRepository(repository, bty))
 }

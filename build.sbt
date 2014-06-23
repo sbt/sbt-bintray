@@ -8,14 +8,16 @@ description := "package publisher for bintray.com"
 
 sbtPlugin := true
 
-libraryDependencies += "me.lessis" %% "bintry" % "0.3.0-SNAPSHOT"
+libraryDependencies ++= Seq(
+  "me.lessis" %% "bintry" % "0.3.0-SNAPSHOT",
+  "org.slf4j" % "slf4j-jdk14" % "1.7.7") // https://github.com/softprops/bintray-sbt/issues/26
 
 scalacOptions ++= Seq(Opts.compile.deprecation, "-feature")
 
 resolvers += Resolver.sonatypeRepo("releases")
 
-licenses <++= (name, version)((name, v) => Seq("MIT" -> url(
-  "https://github.com/softprops/%s/blob/%s/LICENSE".format(name, v))))
+licenses ++= Seq("MIT" -> url(
+  s"https://github.com/softprops/${name.value}/blob/${version.value}/LICENSE"))
 
 publishTo := Some(Classpaths.sbtPluginReleases)
 

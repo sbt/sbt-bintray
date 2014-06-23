@@ -3,7 +3,10 @@ package bintray
 import sbt.IO
 import java.io.File
 
-case class BintrayCredentials(user: String, password: String)
+case class BintrayCredentials(
+  user: String, password: String) {
+  override def toString = s"BintrayCredentials($user, ${"x"*password.size})"
+}
 
 object BintrayCredentials {
 
@@ -16,6 +19,7 @@ object BintrayCredentials {
       |password = %s""".stripMargin.format(
         realm, host, name, password)
 
+  /** bintray api */
   object api {
     def toDirect(bc: BintrayCredentials) =
       sbt.Credentials(Realm, Host, bc.user, bc.password)
@@ -24,6 +28,7 @@ object BintrayCredentials {
     val template = templateSrc(Realm, Host)_
   }
 
+  /** sonatype oss (for mvn central sync) */
   object sonatype {
     val Host = "oss.sonatype.org"
     val Realm = "Sonatype Nexus Repository Manager"

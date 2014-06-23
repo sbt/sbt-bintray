@@ -1,6 +1,5 @@
 package bintray
 
-import dispatch._
 import com.ning.http.client.Response
 
 case class EitherHttp[A,B](
