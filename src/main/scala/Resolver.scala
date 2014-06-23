@@ -1,5 +1,6 @@
 package bintray
 
+import bintry.Client
 import java.io.File
 import java.net.URL
 import org.apache.ivy.core.module.descriptor.Artifact
@@ -9,7 +10,6 @@ import org.apache.ivy.plugins.repository.{ AbstractRepository, Repository }
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import bintry.Client
 
 case class BintrayMavenRepository(
   underlying: Repository, bty: Client#Repo#Package)
@@ -17,13 +17,14 @@ case class BintrayMavenRepository(
 
   override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit = {
     val destPath = transform(dest)
-    val (code, body) = Await.result(
+    Await.result(
       bty.mvnUpload(destPath, src).publish(true)(asStatusAndBody),
-      Duration.Inf)
-    if (code != 201) {
-      println(body)
-      throw new RuntimeException("error uploading to %s: %s" format(dest, body))
-    }
+      Duration.Inf) match {
+        case (201, _) =>
+        case (_, fail) =>
+          println(fail)
+          throw new RuntimeException(s"error uploading to $dest: $fail")
+      }
   }
 
   def getResource(src: String) = underlying.getResource(src)
@@ -48,13 +49,14 @@ case class BintrayIvyRepository(
 
   override def put(
     artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit = {
-    val (code, body) = Await.result(
+    Await.result(
       bty.upload(dest, src).publish(true)(asStatusAndBody),
-      Duration.Inf)
-    if (code != 201) {
-      println(body)
-      throw new RuntimeException("error uploading to %s: %s" format(dest, body))
-    }
+      Duration.Inf) match {
+        case (201, _) =>
+        case (_, fail) =>
+          println(fail)
+          throw new RuntimeException(s"error uploading to $dest: $fail")
+      }
   }
 
   def getResource(src: String) = underlying.getResource(src)

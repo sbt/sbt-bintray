@@ -1,12 +1,12 @@
 package bintray
 
-import java.io.File
-import sbt.{ Credentials, Global, Path, Resolver, Setting, Task }
-import sbt.Path.richFile
-import sbt.Keys._
-import sbt.Def.{ Initialize, setting, task }
 import bintry.{ BooleanAttr, Client, Licenses, VersionAttr }
 import dispatch.as
+import java.io.File
+import sbt.{ Credentials, Global, Path, Resolver, Setting, Task }
+import sbt.Def.{ Initialize, setting, task }
+import sbt.Keys._
+import sbt.Path.richFile
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.Duration
@@ -105,10 +105,11 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
       val pkg = (name in bintray).value
       val vers = version.value
       val log = streams.value.log
-      val (status, body) = await.result(
-        bty.get(pkg).version(vers).delete(asStatusAndBody))
-      if (status == 200) log.info(s"$pkg@$vers was discarded")
-      else sys.error(s"failed to discard $pkg@$vers: $body")
+      await.result(
+        bty.get(pkg).version(vers).delete(asStatusAndBody)) match {
+          case (200, _) => log.info(s"$pkg@$vers was discarded")
+          case (_, fail) =>sys.error(s"failed to discard $pkg@$vers: $fail")
+        }
     }
 
   /** pgp sign remotely published artifacts then publish those signed artifacts */
@@ -162,23 +163,22 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
       val btyVersion = bty.get(pkg).version(vers)
       val BintrayCredentials(sonauser, sonapass) =
         resolveSonatypeCredentials(creds)
-      val (status, body) = await.result(
-        btyVersion.mavenCentralSync(sonauser, sonapass)(asStatusAndBody))
-      status match {
-        case ok if ok == 200 =>
+      await.result(
+        btyVersion.mavenCentralSync(sonauser, sonapass)(asStatusAndBody)) match {
+        case (200, body) =>
           // store these sonatype credentials in memory for the remainder of the sbt session
           Cache.putMulti(
             ("sonauser", sonapass), ("sonapass", sonapass))
           log.info(s"$pkg@$vers was synced with maven central")
           log.info(s"body $body")
-        case nf if nf == 404 =>
+        case (404, body) =>
           log.info(s"$pkg@$vers was not found. try publishing this package version to bintray first by typing `publish`")
           log.info(s"body $body")
-        case _ =>
+        case (_, body) =>
           // ensure these items are removed from the cache, they are probably bad
           Cache.removeMulti("sona.user", "sona.pass")
           sys.error(s"failed to sync $pkg@$vers with maven central: $body")
-      }
+        }
     }
 
   /** if credentials exist, append a user-specific resolver */
