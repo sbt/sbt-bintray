@@ -3,3 +3,4 @@ https://github.com/sbt/sbt/blob/0.13/ivy/src/main/scala/sbt/Resolver.scala
 http://www.scala-sbt.org/0.13.0/docs/Community/ChangeSummary_0.13.0.html
 https://bintray.com/bintray/jcenter
 http://www.scala-sbt.org/release/docs/Detailed-Topics/Publishing.html
+http://www.scala-sbt.org/0.13.0/docs/Community/ChangeSummary_0.13.0.html#control-over-automatically-added-settings
