@@ -19,11 +19,11 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
     def ready[T](f: => Future[T]) = Await.ready(f, Duration.Inf)
   }
 
-  // publishes version attributes after publishing artifact files
+  /** publishes version meta attributes after successfully publishing artifact files */
   private def publishWithVersionAttrs: Initialize[Task[Unit]] =
     (publish, publishVersionAttributes)(_ && _)
 
-  /** updates a package version with the values defined in versionAttributes in bintray*/
+  /** updates a package version with the values defined in versionAttributes in bintray */
   private def publishVersionAttributesTask: Initialize[Task[Unit]] =
     task {
       val tmp = ensureCredentials.value
@@ -39,7 +39,8 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
     }
 
   /** Ensure user-specific bintray package exists. This will have a side effect of updating the packages attrs
-   *  when it exists. Perhaps we want to factor that into an explicit task. */
+   *  when it exists.
+   *  todo(doug): Perhaps we want to factor that into an explicit task. */
   private def ensurePackageTask: Initialize[Task[Unit]] =
     task {
       val tmp = ensureCredentials.value
@@ -61,7 +62,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
           val created = await.result(
             bty.createPackage(pkg)
               .desc(desc)
-              .licenses(lics.map(_._1):_*)
+              .licenses(lics.map { case (name, _) => name }:_*)
               .labels(labels:_*)(asCreated))
           // assign attrs
           if (created && !attrs.isEmpty) await.ready(
@@ -72,7 +73,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
         s"was not able to find or create a package for ${btyOrg.getOrElse(user)} in repo $repo named $name")
     }
 
-  /** set a user-specific bintray publishTo endpoint */
+  /** set a user-specific bintray endpoint for sbt's `publishTo` setting.*/
   private def publishToBintray: Initialize[Option[Resolver]] =
     setting {
       val credsFile = (credentialsFile in bintray).value
@@ -83,11 +84,15 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
       val vers = version.value
       val mvnStyle = publishMavenStyle.value
       val isSbtPlugin = sbtPlugin.value
+      // ensure that we have credentials to build a resolver that can publish to bintray
       ensuredCredentials(
         credsFile, creds.map(BintrayCredentials.api.toDirect(_)).toSeq, prompt = false).map {
         case BintrayCredentials(user, pass) =>
           val btyRepo = Client(user, pass).repo(btyOrg.getOrElse(user), repo)
           val btyPkg = btyRepo.get(pkg)
+          // warn the user that bintray expects maven published artifacts to be published to the `maven` repo
+          // but they have explicitly opted into a publish style and/or repo that
+          // deviates from that expecation
           if ("maven" == repo && !mvnStyle) println(
             "you have opted to publish to a repository named 'maven' but publishMavenStyle is assigned to false. This may result in unexpected behavior")
           Opts.resolver.publishTo(btyRepo, btyPkg, vers, mvnStyle, isSbtPlugin)
@@ -112,7 +117,11 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
         }
     }
 
-  /** pgp sign remotely published artifacts then publish those signed artifacts */
+  /** pgp sign remotely published artifacts then publish those signed artifacts.
+   *  this assumes artifacts are published remotely. signing artifacts doesn't
+   *  mean the signings themselves will be published so it is nessessary to publish
+   *  this immediately after.
+   */
   private def remoteSignTask: Initialize[Task[Unit]] =
     task {
       val log = streams.value.log
@@ -124,14 +133,16 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
       val pkg = (name in bintray).value
       val vers = version.value
       val btyVersion = bty.get(pkg).version(vers)
-      val cached = Cache.get("pgp.pass")
-      val passphrase = cached.orElse(Prompt.descretely("Enter pgp passphrase")).getOrElse {
-        sys.error("pgp passphrase is required")
-      }
+      val passphrase = Cache.get("pgp.pass").orElse(Prompt.descretely("Enter pgp passphrase"))
+        .getOrElse {
+          sys.error("pgp passphrase is required")
+        }
       val (status, body) = await.result(
         btyVersion.sign(passphrase)(asStatusAndBody))
       if (status == 200) {
-        // only ask for pgp credentials once for a given sbt session
+        // we want to only ask for pgp credentials once for a given sbt session
+        // so let's cache them for later use in the session after we're reasonable
+        // sure they are valid
         Cache.put(("pgp.pass", passphrase))
         log.info(s"$pkg@$vers was signed")
         // after signing the remote artifacts, they remain
@@ -140,15 +151,16 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
         // artifacts here
         val (pubStatus, pubBody) = await.result(
           btyVersion.publish(asStatusAndBody))
-        if (pubStatus != 200) {
-          sys.error(s"failed to publish signed artifacts: $pubBody")
-        }
+        if (pubStatus != 200) sys.error(
+          s"failed to publish signed artifacts: $pubBody")
       }
       else sys.error(s"failed to sign $pkg@$vers: $body")
     }
 
   /** synchronize a published set of artifacts for a pkg version to mvn central
-   *  this requires already having a sonatype oss account set up */
+   *  this requires already having a sonatype oss account set up.
+   *  this is itself quite a task but in the case the user has done this in the past
+   *  this can be quiet a convenient feature */
   private def syncMavenCentralTask: Initialize[Task[Unit]] =
     task {
       val log = streams.value.log
@@ -238,6 +250,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
         })
     }
 
+  /** log who bintry sbt thinks you are with respect to bintray api authorization */
   private def whoamiTask: Initialize[Task[String]] =
     task {
       val log = streams.value.log
@@ -303,9 +316,10 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
       sys.error("bintray username required")
     }
     val pass = Prompt.descretely("Enter bintray API key %s" format(
-      defaultKey.map(_ => "(use current)").getOrElse("(under https://bintray.com/profile/edit)"))).orElse(defaultKey).getOrElse {
-      sys.error("bintray API key required")
-    }
+      defaultKey.map(_ => "(use current)").getOrElse("(under https://bintray.com/profile/edit)")))
+        .orElse(defaultKey).getOrElse {
+          sys.error("bintray API key required")
+        }
     (name, pass)
   }
 
