@@ -8,9 +8,11 @@ description := "package publisher for bintray.com"
 
 sbtPlugin := true
 
+resolvers += "softprops-maven" at "http://dl.bintray.com/content/softprops/maven"
+
 libraryDependencies ++= Seq(
-  "me.lessis" %% "bintry" % "0.3.0-SNAPSHOT",
-  "org.slf4j" % "slf4j-jdk14" % "1.7.7") // https://github.com/softprops/bintray-sbt/issues/26
+  "me.lessis" %% "bintry" % "0.3.0",
+  "org.slf4j" % "slf4j-nop" % "1.7.7") // https://github.com/softprops/bintray-sbt/issues/26
 
 scalacOptions ++= Seq(Opts.compile.deprecation, "-feature")
 
