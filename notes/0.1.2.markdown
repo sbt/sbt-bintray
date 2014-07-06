@@ -10,5 +10,26 @@ Store PGP credentials on [bintray](http://blog.bintray.com/2013/08/06/fight-crim
 
     bintray::remoteSign
     
-Note, this is a voluntary action. It does not run when you publish. publish first, then remoteSign.
+Note, this is a voluntary action. It does not run when you publish, publish first, then remoteSign.
 
+* sync to maven central
+
+Have your bintray published artifacts [synced with maven central](http://blog.bintray.com/2014/02/11/bintray-as-pain-free-gateway-to-maven-central/). You can do so with the the `syncMavenCentral` task
+
+    bintray::syncMavenCentral
+    
+Note, this is a voluntary action. Syncing packages to [mvn central](http://search.maven.org/) has some extra requirements. Most are covered in the article linked above.
+
+* specify bintray api credentials inline or with sbt's built-in credentials interface
+
+To specfiy credentials inline you can do so with the `bintrayCredentials` setting as follows
+
+    bintray.Keys.bintrayCredentials in bintray.Keys.bintray := Some(bintray.BintrayCredentials(username, apiToken))
+    
+or within sbt's built-in credential store (this can also be a path reference)
+
+    credentials += Credentials(
+       "Bintray API Realm",
+       "api.bintray.com",
+       username, apiToken
+    )
