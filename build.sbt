@@ -2,7 +2,7 @@ organization := "me.lessis"
 
 name := "bintray-sbt"
 
-version := "0.1.2-SNAPSHOT"
+version := "0.1.2"
 
 description := "package publisher for bintray.com"
 
@@ -18,10 +18,6 @@ resolvers += Resolver.sonatypeRepo("releases")
 
 licenses ++= Seq("MIT" -> url(
   s"https://github.com/softprops/${name.value}/blob/${version.value}/LICENSE"))
-
-publishTo := Some(Classpaths.sbtPluginReleases)
-
-publishMavenStyle := false
 
 publishArtifact in Test := false
 
@@ -40,6 +36,8 @@ pomExtra := (
 )
 
 seq(lsSettings:_*)
+
+externalResolvers in LsKeys.lsync := (resolvers in bintray.Keys.bintray).value
 
 seq(bintraySettings:_*)
 
