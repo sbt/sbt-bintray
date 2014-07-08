@@ -17,18 +17,26 @@ resolvers += Resolver.url(
     url("http://dl.bintray.com/content/sbt/sbt-plugin-releases"))(
         Resolver.ivyStylePatterns)
 
-addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.1")
+addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.2")
 ```
 
-_NOTE_ this plugin is targeting the next release of sbt, 0.13.0.
+_NOTE_ this plugin is targets sbt 0.13.
 
 You will need to add the following to your `project/build.properties` file if you have multiple versions of sbt installed
 
-    sbt.version=0.13.0
+    sbt.version=0.13.5
 
-Be sure to use the [latest launcher](http://www.scala-sbt.org/0.13.0/docs/Getting-Started/Setup.html#installing-sbt).
+Be sure to use the [latest launcher](http://www.scala-sbt.org/download.html)
 
 ## Usage
+
+### Both resolving and publishing
+
+You can save yourself some configuration if you wish to both resolve and publish by simply adding the following to your build configuration
+
+```scala
+seq(bintraySettings:_*)
+```
 
 ### Resolving
 
@@ -43,7 +51,13 @@ to your build. This will add `bintray.Opts.resolver.jcenter` (the [analog to mav
 So you want to resolve a package from someone else's repo? Not a problem. Add the following to your sbt build definition
 
 ```scala
-resolvers += bintray.Opts.resolver.repo("user", "repo")
+resolvers += bintray.Opts.resolver.repo("otherUser", "otherRepo")
+```
+
+Typically you will be depending on packages published to that users's "maven" repo, in which case you may just with to use
+
+```scala
+resolvers += bintray.Opts.resolver.mavenRepo("otherUser")
 ```
 
 ### Publishing
@@ -67,7 +81,6 @@ At any time you can check who you will be authenticated as with the `whoami` set
 
     > bintray::whoami
 
-
 You may optionally wish to publish to a bintray organization instead of your bintray user account. To do so, use the `bintrayOrganization` settting
 in your project's build definition after mixing in `bintraySettings`.
 
@@ -89,7 +102,7 @@ licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
 #### Labels
 
-The first time you publish a bintray package, this plugin will create the package for you on bintrary. Along with the actual contents
+The first time you publish a bintray package, this plugin will create the package for you on bintray. Along with the actual contents
 of the package, you can list a publicly visible list of labels that related to your package.
 
 You can assign this with the `packageLabels in bintray` setting key.
@@ -121,13 +134,6 @@ _NOTE_ This interface will likely change in the future. All changes will be anno
 When publishing for the first time, bintray sbt will create a package for you under your bintray account's "maven" repository
 with using your project's (module)name as the package name and description for your package description.
 
-### Both resolving and publishing
-
-You can save yourself some configuration if you wish to both resolve and publish by simply adding the following to your build configuration
-
-```scala
-seq(bintraySettings:_*)
-```
 
 ### Unpublishing
 
@@ -139,6 +145,6 @@ It's generally a bad practice to remove a version of a library others may depend
 
 The easiest way to learn about bintray-sbt is to use the sbt console REPL typing `bintray::<tab>` to discover bintray keys.
 
-Doug Tangren (softprops) 2013
+Doug Tangren (softprops) 2013-2014
 
 always be shipping.
