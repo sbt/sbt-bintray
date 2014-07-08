@@ -4,7 +4,7 @@
 
 ## features
 
-The general theme for this release is less publishing pain for those who have special publishing needs. Bintray.com reduces this pain rather well. Bintray-sbt exposes that to your sbt build.
+The general theme for this release is to reduce publishing pain for those who have special publishing needs. Bintray.com reduces this pain rather well. Bintray-sbt exposes those pain killers to your sbt build.
 
 * [PGP](http://en.wikipedia.org/wiki/Pretty_Good_Privacy) sign your published artifacts remotely
 
@@ -12,14 +12,25 @@ PGP is an industry standard for signing your work in a way that can be verified 
 
     bintray::remoteSign
     
-Note, this is a _voluntary_ action. It does not run when you publish, publish first, then remoteSign. This action will then publish the signed artifacts for the current version. It should be noted that if you want to sign your artifacts locally rather than remotely, there's an [sbt plugin for that](http://www.scala-sbt.org/sbt-pgp/).
+Note, this is a _voluntary_ action. It does not run when you publish, run the `publish` task first, then run `remoteSign`. This action will publish the signed artifacts for the current version. Note that if you want to sign your artifacts locally rather than remotely, there's a well-maintained [sbt plugin for that](http://www.scala-sbt.org/sbt-pgp/) as well.
 
 * sync to maven central
 
-Bintray.com puts you at the center of control for publishing of arbitrary content, including maven artifacts. Because it's not yet a default resolver in most build tools, including sbt, your users will have to append a bintray resolver for your artifacts. To address this bintray now supports maven central synchronizing of artifacts for those who's bintray packages are linked to [jCenter](https://bintray.com/bintray/jcenter) and have a valid account on sonatype oss.
+Bintray.com puts you at the center of control for publishing arbitrary content, including maven artifacts. Because bintray decentralizes published content, it's host's are most likely not in the default resolver chains of most build tools, including sbt. Until then, your users will have to append a bintray resolver for your artifacts. To address this, bintray now supports maven central synchronizing of artifacts for those who's bintray packages are linked to [jCenter](https://bintray.com/bintray/jcenter) and who have a registered account on sonatype oss.
 
 To have your bintray-published artifacts [sync'd with maven central](http://blog.bintray.com/2014/02/11/bintray-as-pain-free-gateway-to-maven-central/), you can simply run the `syncMavenCentral` task ( user sonatype credentials are required if you don't have a set of sbt publishing credentials already defined for the "oss.sonatype.org" host)
 
     bintray::syncMavenCentral
     
 Note, this is a _voluntary_ action. Syncing packages to [maven central](http://search.maven.org/) has some extra requirements. Most are covered in the article [here](http://blog.bintray.com/2014/02/11/bintray-as-pain-free-gateway-to-maven-central) and [here](https://docs.sonatype.org/display/Repository/Central+Sync+Requirements).
+
+* convenience for maven repo convention
+
+Typical bintray usage in sbt will be resolving packages from maven repositories. To append a bintray resolver in sbt you could previously add the following to your build definition
+
+    resolvers += bintray.Opts.resolver.repo("user", "maven")
+    
+
+The bintray convention of storing maven style packages in a bintray repo named "maven" is not likely to change so in most cases you may now wish to simply use the following in your build definition
+
+    resolvers += bintray.Opts.resolver.mavenRepo("user")

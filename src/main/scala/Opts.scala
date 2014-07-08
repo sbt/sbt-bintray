@@ -16,6 +16,8 @@ object Opts {
                            pkg.version(version),
                            sbt.Resolver.ivyStylePatterns.artifactPatterns))
 
+    def mavenRepo(name: String) = repo(name, "maven")
+
     def repo(name: String, repo: String) =
       MavenRepository(
         s"Bintray-Resolve-$name-$repo",
