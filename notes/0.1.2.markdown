@@ -4,32 +4,22 @@
 
 ## features
 
+The general theme for this release is less publishing pain for those who have special publishing needs. Bintray.com reduces this pain rather well. Bintray-sbt exposes that to your sbt build.
+
 * [PGP](http://en.wikipedia.org/wiki/Pretty_Good_Privacy) sign your published artifacts remotely
 
-Store PGP credentials on [bintray](http://blog.bintray.com/2013/08/06/fight-crime-with-gpg/) so that you can sign artifacts from anywhere. You can do so with the `remoteSign` sbt task
+PGP is an industry standard for signing your work in a way that can be verified by interested parties. You can now store you PGP credentials on [bintray](http://blog.bintray.com/2013/08/06/fight-crime-with-gpg/) so that you can sign artifacts from anywhere. Once you've uploaded your PGP keys to bintray's servers, you can sign your published artifacts with the `remoteSign` sbt task ( your pgp passphrase is required )
 
     bintray::remoteSign
     
-Note, this is a voluntary action. It does not run when you publish, publish first, then remoteSign.
+Note, this is a _voluntary_ action. It does not run when you publish, publish first, then remoteSign. This action will then publish the signed artifacts for the current version. It should be noted that if you want to sign your artifacts locally rather than remotely, there's an [sbt plugin for that](http://www.scala-sbt.org/sbt-pgp/).
 
 * sync to maven central
 
-Have your bintray published artifacts [synced with maven central](http://blog.bintray.com/2014/02/11/bintray-as-pain-free-gateway-to-maven-central/). You can do so with the the `syncMavenCentral` task
+Bintray.com puts you at the center of control for publishing of arbitrary content, including maven artifacts. Because it's not yet a default resolver in most build tools, including sbt, your users will have to append a bintray resolver for your artifacts. To address this bintray now supports maven central synchronizing of artifacts for those who's bintray packages are linked to [jCenter](https://bintray.com/bintray/jcenter) and have a valid account on sonatype oss.
+
+To have your bintray-published artifacts [sync'd with maven central](http://blog.bintray.com/2014/02/11/bintray-as-pain-free-gateway-to-maven-central/), you can simply run the `syncMavenCentral` task ( user sonatype credentials are required if you don't have a set of sbt publishing credentials already defined for the "oss.sonatype.org" host)
 
     bintray::syncMavenCentral
     
-Note, this is a voluntary action. Syncing packages to [mvn central](http://search.maven.org/) has some extra requirements. Most are covered in the article linked above.
-
-* specify bintray api credentials inline or with sbt's built-in credentials interface
-
-To specfiy credentials inline you can do so with the `bintrayCredentials` setting as follows
-
-    bintray.Keys.bintrayCredentials in bintray.Keys.bintray := Some(bintray.BintrayCredentials(username, apiToken))
-    
-or within sbt's built-in credential store (this can also be a path reference)
-
-    credentials += Credentials(
-       "Bintray API Realm",
-       "api.bintray.com",
-       username, apiToken
-    )
+Note, this is a _voluntary_ action. Syncing packages to [maven central](http://search.maven.org/) has some extra requirements. Most are covered in the article [here](http://blog.bintray.com/2014/02/11/bintray-as-pain-free-gateway-to-maven-central) and [here](https://docs.sonatype.org/display/Repository/Central+Sync+Requirements).
