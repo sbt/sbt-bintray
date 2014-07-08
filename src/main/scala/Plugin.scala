@@ -14,7 +14,7 @@ import scala.concurrent.duration.Duration
 object Plugin extends sbt.Plugin with DispatchHandlers {
   import bintray.Keys._
 
-  object await {
+  private[bintray] object await {
     def result[T](f: => Future[T]) = Await.result(f, Duration.Inf)
     def ready[T](f: => Future[T]) = Await.ready(f, Duration.Inf)
   }
@@ -77,7 +77,6 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
   private def publishToBintray: Initialize[Option[Resolver]] =
     setting {
       val credsFile = (credentialsFile in bintray).value
-      val creds = (bintrayCredentials in bintray).value
       val btyOrg = (bintrayOrganization in bintray).value
       val repo = (repository in bintray).value
       val pkg = (name in bintray).value
@@ -86,7 +85,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
       val isSbtPlugin = sbtPlugin.value
       // ensure that we have credentials to build a resolver that can publish to bintray
       ensuredCredentials(
-        credsFile, creds.map(BintrayCredentials.api.toDirect(_)).toSeq, prompt = false).map {
+        credsFile, prompt = false).map {
         case BintrayCredentials(user, pass) =>
           val btyRepo = Client(user, pass).repo(btyOrg.getOrElse(user), repo)
           val btyPkg = btyRepo.get(pkg)
@@ -182,7 +181,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
           Cache.putMulti(
             ("sonauser", sonapass), ("sonapass", sonapass))
           log.info(s"$pkg@$vers was synced with maven central")
-          log.info(s"body $body")
+          log.info(body)
         case (404, body) =>
           log.info(s"$pkg@$vers was not found. try publishing this package version to bintray first by typing `publish`")
           log.info(s"body $body")
@@ -213,11 +212,10 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
     task {
       val log = streams.value.log
       val credsFile = (credentialsFile in bintray).value
-      val creds = (bintrayCredentials in bintray).value      
       val repo = (repository in bintray).value
       val pkgName = (name in bintray).value
       ensuredCredentials(
-        credsFile, creds.map(BintrayCredentials.api.toDirect).toSeq, prompt = true).map {
+        credsFile, prompt = true).map {
         case BintrayCredentials(user, pass) =>
           import org.json4s._
           val pkg = Client(user, pass).repo(user, repo).get(pkgName)
@@ -268,8 +266,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
   private def ensureCredentialsTask: Initialize[Task[BintrayCredentials]] =
     task {
       ensuredCredentials(
-        (credentialsFile in bintray).value,
-        (bintrayCredentials in bintray).value.map(BintrayCredentials.api.toDirect).toSeq ++ credentials.value).get
+        (credentialsFile in bintray).value).get
     }
 
   private def resolveSonatypeCredentials(
@@ -333,29 +330,19 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
   /** tries to resolve bintray credentials from sbt's credentials key, then bintray's credentialsFile.
    *  if prompt is true, we enter an interactive mode to collect them from the user */
   private def ensuredCredentials(
-    credsFile: File, creds: Seq[sbt.Credentials], prompt: Boolean = true): Option[BintrayCredentials] =
-    Credentials.forHost(creds, BintrayCredentials.api.Host)
-      .map(Credentials.toDirect).map { dc =>
-        val resolved = BintrayCredentials(dc.userName, dc.passwd)
-        // side effect! wee oo wee oo - let's write these credentials to the standard credsPath
-        if (!credsFile.exists) {
-          BintrayCredentials.writeBintray(dc.userName, dc.passwd, credsFile)
-        }
-        resolved
-      }.orElse {
+    credsFile: File, prompt: Boolean = true): Option[BintrayCredentials] =
         BintrayCredentials.read(credsFile).fold(sys.error(_), _ match {
           case None =>
             if (prompt) {
               println("bintray-sbt requires your bintray credentials.")
               saveBintrayCredentials(credsFile)(requestCredentials())
-              ensuredCredentials(credsFile, creds, prompt)
+              ensuredCredentials(credsFile, prompt)
             } else {
               println(s"Missing bintray credentials $credsFile. Some bintray features depend on this.")
               None
             }
           case creds => creds
         })
-      }
 
   def bintrayPublishSettings: Seq[Setting[_]] = Seq(
     credentialsFile in bintray in Global := Path.userHome / ".bintray" / ".credentials",
@@ -367,15 +354,13 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
     },
     packageLabels in bintray := Nil,
     description in bintray <<= description,
-    // inlineable credentials
-    bintrayCredentials in bintray := None,
     // note: publishTo may not have dependencies. therefore, we can not rely well on inline overrides
     // for inline credentials resolution we recommend defining bintrayCredentials _before_ mixing in the defaults
     // perhaps we should try overriding something in the publishConfig setting -- https://github.com/sbt/sbt-pgp/blob/master/pgp-plugin/src/main/scala/com/typesafe/sbt/pgp/PgpSettings.scala#L124-L131
     publishTo in bintray <<= publishToBintray,
     resolvers in bintray <<= appendBintrayResolver,
-    credentials in bintray <<= (credentialsFile in bintray, bintrayCredentials in bintray).map {
-      Credentials(_) +: _.map(BintrayCredentials.api.toDirect).toSeq
+    credentials in bintray <<= (credentialsFile in bintray).map {
+      Credentials(_) :: Nil
     },
     packageAttributes in bintray <<= (sbtPlugin, sbtVersion) {
       (plugin, sbtVersion) =>

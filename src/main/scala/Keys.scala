@@ -9,9 +9,6 @@ object Keys {
   val bintrayOrganization = SettingKey[Option[String]](
     "bintrayOrganization", "Bintray organization name to publish to. Defaults to None unless project is an sbtPlugin")
 
-  val bintrayCredentials = SettingKey[Option[BintrayCredentials]](
-    "bintrayCredentials", "A set of sbt.Credentials for bintray publishing")
-
   val repository = SettingKey[String](
     "repository", "Bintray repository to publish to. Defaults to 'maven' unless project is an sbtPlugin")
 
