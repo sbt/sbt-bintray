@@ -20,7 +20,7 @@ resolvers += Resolver.url(
 addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.2")
 ```
 
-_NOTE_ this plugin is targets sbt 0.13.
+_NOTE_ this plugin targets sbt 0.13.
 
 You will need to add the following to your `project/build.properties` file if you have multiple versions of sbt installed
 
