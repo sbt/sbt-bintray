@@ -280,11 +280,12 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
   /** publishing to bintray requires you must have defined a license they support */
   private def ensureLicensesTask: Initialize[Task[Unit]] =
     task {
+      val omit = omitLicense.value.getOrElse(false)
       val ls = licenses.value
       val acceptable = Licenses.Names.mkString(", ")
-      if (ls.isEmpty) sys.error(
+      if (!omit && ls.isEmpty) sys.error(
         s"you must define at least one license for this project. Please choose one or more of $acceptable")
-      if (!ls.forall { case (name, _) => Licenses.Names.contains(name) }) sys.error(
+      if (!omit && !ls.forall { case (name, _) => Licenses.Names.contains(name) }) sys.error(
         s"One or more of the defined licenses where not among the following allowed licenses $acceptable")
     }
 
@@ -372,6 +373,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
         val sv = Map(AttrNames.scalas -> scalaVersions.map(VersionAttr(_)))
         if (plugin) sv ++ Map(AttrNames.sbtVersion-> Seq(VersionAttr(sbtVersion))) else sv
     },
+    omitLicense in bintray in Global := { if (sbtPlugin.value) Some(sbtPlugin.value) else None },
     ensureLicenses <<= ensureLicensesTask,
     ensureCredentials <<= ensureCredentialsTask,
     ensureBintrayPackageExists <<= ensurePackageTask,

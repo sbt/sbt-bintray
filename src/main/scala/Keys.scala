@@ -33,9 +33,12 @@ object Keys {
   val whoami = TaskKey[String](
     "whoami", "Print the name of the currently authenticated bintray user")
 
+  val omitLicense = SettingKey[Option[Boolean]](
+     "omitLicense", "Omit license, useful if publishing to a private repo. Defaults to false")
+
   val ensureLicenses = TaskKey[Unit](
     "bintrayEnsureLicenses", "Ensure that the licenses for bintray are valid.")
- 
+
    val ensureCredentials = TaskKey[BintrayCredentials](
     "bintrayEnsureCredentials", "Ensure that the credentials for bintray are valid.")
 
@@ -53,7 +56,7 @@ object Keys {
 
   val syncMavenCentral = TaskKey[Unit](
     "syncMavenCentral", "Sync bintray-published artifacts with maven central")
-    
+
   /** named used for common package attributes lifted from sbt
    *  build definitions */
   object AttrNames {
