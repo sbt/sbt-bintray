@@ -401,6 +401,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
     packageVersions in bintray <<= packageVersionsTask
   )
 
+  @deprecated("use resolvers += sbt.Resolver.jcenterRepo instead. (available in sbt 0.13.6+)", since="0.2.0")
   def bintrayResolverSettings: Seq[Setting[_]] = Seq(
     resolvers += Opts.resolver.jcenter
   )
