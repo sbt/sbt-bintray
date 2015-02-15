@@ -1,6 +1,6 @@
 package bintray
 
-import bintry.{ BooleanAttr, Client, Licenses, VersionAttr }
+import bintry.{ Attr, Client, Licenses }
 import dispatch.as
 import java.io.File
 import sbt.{ Credentials, Global, Path, Resolver, Setting, Task }
@@ -70,7 +70,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
           created
         }
       if (!exists) sys.error(
-        s"was not able to find or create a package for ${btyOrg.getOrElse(user)} in repo $repo named $name")
+        s"was not able to find or create a package for ${btyOrg.getOrElse(user)} in repo $repo named $pkg")
     }
 
   /** set a user-specific bintray endpoint for sbt's `publishTo` setting.*/
@@ -283,10 +283,12 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
       val omit = omitLicense.value.getOrElse(false)
       val ls = licenses.value
       val acceptable = Licenses.Names.mkString(", ")
-      if (!omit && ls.isEmpty) sys.error(
-        s"you must define at least one license for this project. Please choose one or more of $acceptable")
-      if (!omit && !ls.forall { case (name, _) => Licenses.Names.contains(name) }) sys.error(
-        s"One or more of the defined licenses where not among the following allowed licenses $acceptable")
+      if (!omit) {
+        if (!ls.isEmpty) sys.error(
+          s"you must define at least one license for this project. Please choose one or more of $acceptable")
+        if (!ls.forall { case (name, _) => Licenses.Names.contains(name) }) sys.error(
+          s"One or more of the defined licenses where not among the following allowed licenses $acceptable")
+      }
     }
 
   private def requestSonatypeCredentials: (String, String) = {
@@ -365,13 +367,13 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
     },
     packageAttributes in bintray <<= (sbtPlugin, sbtVersion) {
       (plugin, sbtVersion) =>
-        if (plugin) Map(AttrNames.sbtPlugin -> Seq(BooleanAttr(plugin)))
+        if (plugin) Map(AttrNames.sbtPlugin -> Seq(Attr.Boolean(plugin)))
         else Map.empty
     },
     versionAttributes in bintray <<= (crossScalaVersions, sbtPlugin, sbtVersion) {
       (scalaVersions, plugin, sbtVersion) =>
-        val sv = Map(AttrNames.scalas -> scalaVersions.map(VersionAttr(_)))
-        if (plugin) sv ++ Map(AttrNames.sbtVersion-> Seq(VersionAttr(sbtVersion))) else sv
+        val sv = Map(AttrNames.scalas -> scalaVersions.map(Attr.Version(_)))
+        if (plugin) sv ++ Map(AttrNames.sbtVersion-> Seq(Attr.Version(sbtVersion))) else sv
     },
     omitLicense in bintray in Global := { if (sbtPlugin.value) Some(sbtPlugin.value) else None },
     ensureLicenses <<= ensureLicensesTask,
