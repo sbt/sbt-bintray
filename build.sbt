@@ -6,10 +6,12 @@ version := "0.1.2-patch"
 
 description := "package publisher for bintray.com"
 
+homepage := Some(url(s"https://github.com/softprops/${name.value}#readme"))
+
 sbtPlugin := true
 
 libraryDependencies ++= Seq(
-  "me.lessis" %% "bintry" % "0.3.0",
+  "me.lessis" %% "bintry" % "0.4.0-SNAPSHOT",
   "org.slf4j" % "slf4j-nop" % "1.7.7") // https://github.com/softprops/bintray-sbt/issues/26
 
 scalacOptions ++= Seq(Opts.compile.deprecation, "-feature")
@@ -23,8 +25,8 @@ publishArtifact in Test := false
 
 pomExtra := (
   <scm>
-    <url>git@github.com:softprops/bintray-sbt.git</url>
-    <connection>scm:git:git@github.com:softprops/bintray-sbt.git</connection>
+    <url>git@github.com:softprops/{name.value}.git</url>
+    <connection>scm:git:git@github.com:softprops/{name.value}.git</connection>
   </scm>
   <developers>
     <developer>
