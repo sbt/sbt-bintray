@@ -347,7 +347,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
           case creds => creds
         })
 
-  def bintrayPublishSettings: Seq[Setting[_]] = Seq(
+  def bintrayPublishSettings: Seq[Setting[_]] = bintrayCommonSettings ++ Seq(
     credentialsFile in bintray in Global := Path.userHome / ".bintray" / ".credentials",
     name in bintray := moduleName.value,
     bintrayOrganization in bintray in Global := { if (sbtPlugin.value) Some("sbt") else None },
