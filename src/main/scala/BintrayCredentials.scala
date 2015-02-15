@@ -13,11 +13,10 @@ object BintrayCredentials {
   val Keys = Seq("realm", "host", "user", "password")
   def templateSrc(realm: String, host: String)(
     name: String, password: String) =
-    """realm = %s
-      |host = %s
-      |user = %s
-      |password = %s""".stripMargin.format(
-        realm, host, name, password)
+    s"""realm = $realm
+       |host = $host
+       |user = $name
+       |password = $password""".stripMargin
 
   /** bintray api */
   object api {
