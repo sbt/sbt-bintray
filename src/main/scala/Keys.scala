@@ -33,7 +33,7 @@ object Keys {
   val whoami = TaskKey[String](
     "whoami", "Print the name of the currently authenticated bintray user")
 
-  val omitLicense = SettingKey[Option[Boolean]](
+  val omitLicense = SettingKey[Boolean](
      "omitLicense", "Omit license, useful if publishing to a private repo. Defaults to false")
 
   val ensureLicenses = TaskKey[Unit](
