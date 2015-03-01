@@ -17,14 +17,14 @@ resolvers += Resolver.url(
     url("http://dl.bintray.com/content/sbt/sbt-plugin-releases"))(
         Resolver.ivyStylePatterns)
 
-addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.2")
+addSbtPlugin("me.lessis" % "bintray-sbt" % "0.2.0")
 ```
 
-_NOTE_ this plugin targets sbt 0.13.
+_NOTE_ this plugin targets sbt 0.13.6+
 
 You will need to add the following to your `project/build.properties` file if you have multiple versions of sbt installed
 
-    sbt.version=0.13.5
+    sbt.version=0.13.7
 
 Be sure to use the [latest launcher](http://www.scala-sbt.org/download.html)
 

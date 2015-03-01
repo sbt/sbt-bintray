@@ -19,7 +19,8 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
     def ready[T](f: => Future[T]) = Await.ready(f, Duration.Inf)
   }
 
-  /** publishes version meta attributes after successfully publishing artifact files */
+  /** publishes version meta attributes after successfully publishing artifact files. this happens _after_
+   *  a successful publish action */
   private def publishWithVersionAttrs: Initialize[Task[Unit]] =
     (publish, publishVersionAttributes)(_ && _)
 
@@ -46,13 +47,14 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
       val tmp = ensureCredentials.value
       val BintrayCredentials(user, key) = tmp
       val btyOrg = (bintrayOrganization in bintray).value
+      val owner = btyOrg.getOrElse(user)
       val repo = (repository in bintray).value
       val pkg = (name in bintray).value
       val desc = (description in bintray).value
       val labels = (packageLabels in bintray).value
       val attrs = (packageAttributes in bintray).value
       val lics = licenses.value
-      val bty = Client(user, key).repo(btyOrg.getOrElse(user), repo)
+      val bty = Client(user, key).repo(owner, repo)
       val exists =
         if (await.result(bty.get(pkg)(asFound))) {
           // update existing attrs
@@ -70,7 +72,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
           created
         }
       if (!exists) sys.error(
-        s"was not able to find or create a package for ${btyOrg.getOrElse(user)} in repo $repo named $pkg")
+        s"was not able to find or create a package for $owner in $repo named $pkg")
     }
 
   /** set a user-specific bintray endpoint for sbt's `publishTo` setting.*/
@@ -105,14 +107,15 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
       val BintrayCredentials(user, key) = tmp
       val btyOrg = (bintrayOrganization in bintray).value
       val repo = (repository in bintray).value
-      val bty = Client(user, key).repo(btyOrg.getOrElse(user), repo)
+      val owner = btyOrg.getOrElse(user)
+      val bty = Client(user, key).repo(owner, repo)
       val pkg = (name in bintray).value
       val vers = version.value
       val log = streams.value.log
       await.result(
         bty.get(pkg).version(vers).delete(asStatusAndBody)) match {
-          case (200, _) => log.info(s"$pkg@$vers was discarded")
-          case (_, fail) =>sys.error(s"failed to discard $pkg@$vers: $fail")
+          case (200, _) =>  log.info(s"$owner/$pkg@$vers was discarded")
+          case (_, fail) => sys.error(s"failed to discard $owner/$pkg@$vers: $fail")
         }
     }
 
@@ -127,8 +130,9 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
       val tmp = ensureCredentials.value
       val BintrayCredentials(user, key) = tmp
       val btyOrg = (bintrayOrganization in bintray).value
+      val owner = btyOrg.getOrElse(user)
       val repo = (repository in bintray).value
-      val bty = Client(user, key).repo(btyOrg.getOrElse(user), repo)
+      val bty = Client(user, key).repo(owner, repo)
       val pkg = (name in bintray).value
       val vers = version.value
       val btyVersion = bty.get(pkg).version(vers)
@@ -143,7 +147,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
         // so let's cache them for later use in the session after we're reasonable
         // sure they are valid
         Cache.put(("pgp.pass", passphrase))
-        log.info(s"$pkg@$vers was signed")
+        log.info(s"$owner/$pkg@$vers was signed")
         // after signing the remote artifacts, they remain
         // unpublished (not available for download)
         // we are opting to publish those unpublished
@@ -151,9 +155,9 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
         val (pubStatus, pubBody) = await.result(
           btyVersion.publish(asStatusAndBody))
         if (pubStatus != 200) sys.error(
-          s"failed to publish signed artifacts: $pubBody")
+          s"failed to publish signed artifacts for $owner/$pkg@$vers: $pubBody")
       }
-      else sys.error(s"failed to sign $pkg@$vers: $body")
+      else sys.error(s"failed to sign $owner/$pkg@$vers: $body")
     }
 
   /** synchronize a published set of artifacts for a pkg version to mvn central
@@ -167,7 +171,8 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
       val BintrayCredentials(user, key) = tmp
       val repo = (repository in bintray).value
       val btyOrg = (bintrayOrganization in bintray).value
-      val bty = Client(user, key).repo(btyOrg.getOrElse(user), repo)
+      val owner = btyOrg.getOrElse(user)
+      val bty = Client(user, key).repo(owner, repo)
       val pkg = (name in bintray).value
       val vers = version.value
       val creds = credentials.value
@@ -180,15 +185,15 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
           // store these sonatype credentials in memory for the remainder of the sbt session
           Cache.putMulti(
             ("sonauser", sonapass), ("sonapass", sonapass))
-          log.info(s"$pkg@$vers was synced with maven central")
+          log.info(s"$owner/$pkg@$vers was synced with maven central")
           log.info(body)
         case (404, body) =>
-          log.info(s"$pkg@$vers was not found. try publishing this package version to bintray first by typing `publish`")
+          log.info(s"$owner/$pkg@$vers was not found. try publishing this package version to bintray first by typing `publish`")
           log.info(s"body $body")
         case (_, body) =>
           // ensure these items are removed from the cache, they are probably bad
           Cache.removeMulti("sona.user", "sona.pass")
-          sys.error(s"failed to sync $pkg@$vers with maven central: $body")
+          sys.error(s"failed to sync $owner/$pkg@$vers with maven central: $body")
         }
     }
 
@@ -225,9 +230,9 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
             Nil
           }, { js =>
             for {
-              JObject(fs) <- js
+              JObject(fs)                    <- js
               ("versions", JArray(versions)) <- fs
-              JString(versionString) <- versions
+              JString(versionString)         <- versions
             } yield {
               log.info(s"- $versionString")
               versionString
@@ -253,12 +258,13 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
     task {
       val log = streams.value.log
       val creds = (credentialsFile in bintray).value
-      val is = BintrayCredentials.read(creds).fold(sys.error(_), _ match {
-        case None =>
-          "nobody"
-        case Some(BintrayCredentials(user, _)) =>
-          user
-      })
+      val is = BintrayCredentials.read(creds)
+        .fold(sys.error(_), _ match {
+          case None =>
+            "nobody"
+          case Some(BintrayCredentials(user, _)) =>
+            user
+        })
       log.info(is)
       is
     }
@@ -282,12 +288,12 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
     task {
       val omit = omitLicense.value
       val ls = licenses.value
-      val acceptable = Licenses.Names.mkString(", ")
+      val acceptable = Licenses.Names.toSeq.sorted.mkString(", ")
       if (!omit) {
-        if (!ls.isEmpty) sys.error(
-          s"you must define at least one license for this project. Please choose one or more of $acceptable")
+        if (ls.isEmpty) sys.error(
+          s"you must define at least one license for this project. Please choose one or more of\n $acceptable")
         if (!ls.forall { case (name, _) => Licenses.Names.contains(name) }) sys.error(
-          s"One or more of the defined licenses where not among the following allowed licenses $acceptable")
+          s"One or more of the defined licenses where not among the following allowed licenses\n $acceptable")
       }
     }
 
