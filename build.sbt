@@ -2,7 +2,7 @@ organization := "me.lessis"
 
 name := "bintray-sbt"
 
-version := "0.2.0-SNAPSHOT"
+version := "0.2.0"
 
 description := "package publisher for bintray.com"
 
@@ -11,7 +11,7 @@ homepage := Some(url(s"https://github.com/softprops/${name.value}#readme"))
 sbtPlugin := true
 
 libraryDependencies ++= Seq(
-  "me.lessis" %% "bintry" % "0.4.0-SNAPSHOT",
+  "me.lessis" %% "bintry" % "0.4.0",
   "org.slf4j" % "slf4j-nop" % "1.7.7") // https://github.com/softprops/bintray-sbt/issues/26
 
 scalacOptions ++= Seq(Opts.compile.deprecation, "-feature")
