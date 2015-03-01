@@ -1,0 +1,17 @@
+## changes
+
+* support for `unlicensed` packages /via [@knshiro](https://github.com/knshiro)
+
+Bintray requires that all published packages are associated with a named [license](https://bintray.com/docs/api/#_footnote_1). Under some circumstances a given package may wish to opt out of this. For these cases, you may now specify your sbt `licenses` setting with a value of "Unlicense". See [unlicense.org](http://unlicense.org/) for more information.
+
+* support for omitting license /via [@ulejon](https://github.com/ulejon)
+
+Owners of private (premium) bintray repo's may opt out of specifying an sbt `licenses` setting when publishing to bintray altogether by setting the new bintray setting `omitLicense` setting to `true`.
+
+* added deprecation notices
+
+Sbt now defines resolver factories `sbt.Resolver.jcenterRepo` and `sbt.Resolver.bintrayRepo` which both obviate the need for `bintray.Opts.resolver.jcenter` and `bintray.Opts.resolver.repo` respectively. They will both be removed from this plugin in upcoming releases. The resolver factories for bintray have also added support for https in this release.
+
+* bintrayPublishSettings now includes bintrayCommonSettings
+
+It was a mistake not doing this in the first place. `bintrayCommonSettings` appends `changeCredentials` and `whoami` tasks. For the best experience, it is recommended to start with `bintraySettings` and override the defaults as needed.
