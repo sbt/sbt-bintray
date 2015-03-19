@@ -297,19 +297,32 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
       }
     }
 
+  /** Search Sonatype credentials in the following order:
+   *  1. Cache
+   *  2. System properties
+   *  3. Environment variables
+   *  4. User input */
   private def requestSonatypeCredentials: (String, String) = {
     val cached = Cache.getMulti("sona.user", "sona.pass")
     (cached("sona.user"), cached("sona.pass")) match {
       case (Some(user), Some(pass)) =>
         (user, pass)
       case _ =>
-        val name = Prompt("Enter sonatype username").getOrElse {
-          sys.error("sonatype username required")
+        val propsCredentials = for (name <- sys.props.get("sona.user"); pass <- sys.props.get("sona.pass")) yield (name, pass)
+        propsCredentials match {
+          case Some((name, pass)) => (name, pass)
+          case _ =>
+            val envCredentials = for (name <- sys.env.get("SONA_USER"); pass <- sys.env.get("SONA_PASS")) yield (name, pass)
+            envCredentials.getOrElse {
+              val name = Prompt("Enter sonatype username").getOrElse {
+                sys.error("sonatype username required")
+              }
+              val pass = Prompt.descretely("Enter sonatype password").getOrElse {
+                sys.error("sonatype password is required")
+              }
+              (name, pass)
+            }
         }
-        val pass = Prompt.descretely("Enter sonatype password").getOrElse {
-          sys.error("sonatype password is required")
-        }
-        (name, pass)
     }
   }
 
