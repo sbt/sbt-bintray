@@ -2,7 +2,7 @@ organization := "me.lessis"
 
 name := "bintray-sbt"
 
-version := "0.2.1-SNAPSHOT"
+version := "0.2.1"
 
 description := "package publisher for bintray.com"
 
