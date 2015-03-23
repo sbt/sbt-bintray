@@ -1,0 +1,7 @@
+## fixes
+
+* bintray now defines a setting key `vcsUrl` of type `Option[String]`. This defaults to a git push url for a remote named `origin` or the first pushable remote. This setting was facilitated by a new requirement of bintray packages to be created with a `vcs_url` [issue #46](https://github.com/softprops/bintray-sbt/issues/46)
+
+## features
+
+* You can now resolve sonatype credentials via env variables [pull #48](https://github.com/softprops/bintray-sbt/pull/48)
