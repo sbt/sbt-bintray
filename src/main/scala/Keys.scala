@@ -39,7 +39,7 @@ object Keys {
   val ensureLicenses = TaskKey[Unit](
     "bintrayEnsureLicenses", "Ensure that the licenses for bintray are valid.")
 
-   val ensureCredentials = TaskKey[BintrayCredentials](
+  val ensureCredentials = TaskKey[BintrayCredentials](
     "bintrayEnsureCredentials", "Ensure that the credentials for bintray are valid.")
 
   val ensureBintrayPackageExists = TaskKey[Unit](
@@ -56,6 +56,9 @@ object Keys {
 
   val syncMavenCentral = TaskKey[Unit](
     "syncMavenCentral", "Sync bintray-published artifacts with maven central")
+
+  val vcsUrl = SettingKey[Option[String]](
+    "vcsUrl", "Cannonical url for hosted version control repository")
 
   /** named used for common package attributes lifted from sbt
    *  build definitions */

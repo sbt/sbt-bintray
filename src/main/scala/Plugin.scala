@@ -10,6 +10,8 @@ import sbt.Path.richFile
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.Duration
+import scala.util.Try
+import scala.util.control.NonFatal
 
 object Plugin extends sbt.Plugin with DispatchHandlers {
   import bintray.Keys._
@@ -18,6 +20,24 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
     def result[T](f: => Future[T]) = Await.result(f, Duration.Inf)
     def ready[T](f: => Future[T]) = Await.ready(f, Duration.Inf)
   }
+
+  def resolveVcsUrl: Try[Option[String]] =
+    Try {
+      val pushes =
+        sbt.Process("git" :: "remote" :: "-v" :: Nil).!!.split("\n")
+         .map {
+           _.split("""\s+""") match {
+             case Array(name, url, "(push)") =>
+               Some((name, url))
+             case e =>
+               None
+           }
+         }.flatten
+      pushes
+        .find { case (name, _) => "origin" == name }
+        .orElse(pushes.headOption)
+        .map { case (_, url) => url }
+    }
 
   /** publishes version meta attributes after successfully publishing artifact files. this happens _after_
    *  a successful publish action */
@@ -54,7 +74,11 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
       val labels = (packageLabels in bintray).value
       val attrs = (packageAttributes in bintray).value
       val lics = licenses.value
+      val vcs = (vcsUrl in bintray).value.getOrElse {
+        sys.error("""vcsUrl not defined. assign this with (vcsUrl in bintray) := Some("git@github.com:you/your-repo.git")""")
+      }
       val bty = Client(user, key).repo(owner, repo)
+
       val exists =
         if (await.result(bty.get(pkg)(asFound))) {
           // update existing attrs
@@ -64,6 +88,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
           val created = await.result(
             bty.createPackage(pkg)
               .desc(desc)
+              .vcs(vcs)
               .licenses(lics.map { case (name, _) => name }:_*)
               .labels(labels:_*)(asCreated))
           // assign attrs
@@ -370,10 +395,15 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
     credentialsFile in bintray in Global := Path.userHome / ".bintray" / ".credentials",
     name in bintray := moduleName.value,
     bintrayOrganization in bintray in Global := { if (sbtPlugin.value) Some("sbt") else None },
+    // todo: don't force this to be sbt-plugin-releases
     repository in bintray in Global := { if (sbtPlugin.value) "sbt-plugin-releases" else "maven" },
     publishMavenStyle := {
       if (sbtPlugin.value) false else publishMavenStyle.value
     },
+    vcsUrl in bintray := resolveVcsUrl.recover {
+      case NonFatal(e) =>
+        None
+    }.get,
     packageLabels in bintray := Nil,
     description in bintray <<= description,
     // note: publishTo may not have dependencies. therefore, we can not rely well on inline overrides
