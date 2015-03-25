@@ -209,7 +209,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
         case (200, body) =>
           // store these sonatype credentials in memory for the remainder of the sbt session
           Cache.putMulti(
-            ("sonauser", sonapass), ("sonapass", sonapass))
+            ("sona.user", sonauser), ("sona.pass", sonapass))
           log.info(s"$owner/$pkg@$vers was synced with maven central")
           log.info(body)
         case (404, body) =>
