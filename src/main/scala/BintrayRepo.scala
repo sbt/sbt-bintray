@@ -7,17 +7,21 @@ import bintry.{ Attr, Client, Licenses }
 case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repoName: String) extends DispatchHandlers {
   import scala.concurrent.ExecutionContext.Implicits.global
   import dispatch.as
-  
+
   lazy val BintrayCredentials(user, key) = credential
   def client: Client = Client(user, key)
   def repo: Client#Repo = client.repo(org.getOrElse(user), repoName)
   def owner = org.getOrElse(user)
 
+  /** updates a package version with the values defined in versionAttributes in bintray */
   def publishVersionAttributes(packageName: String, vers: String, attributes: AttrMap): Unit =
     await.ready {
       repo.get(packageName).version(vers).attrs.update(attributes.toList:_*)()
     }
 
+  /** Ensure user-specific bintray package exists. This will have a side effect of updating the packages attrs
+   *  when it exists.
+   *  todo(doug): Perhaps we want to factor that into an explicit task. */
   def ensurePackage(packageName: String, attributes: AttrMap,
     desc: String, vcs: String, lics: Seq[(String, URL)], labels: Seq[String]): Unit =
     {
@@ -55,12 +59,18 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
       Opts.resolver.publishTo(bty, pkg, vers, mvnStyle, isSbtPlugin)
     }
 
+  /** unpublish (delete) a version of a package */
   def unpublish(packageName: String, vers: String, log: Logger): Unit =
     await.result(repo.get(packageName).version(vers).delete(asStatusAndBody)) match {
       case (200, _) =>  log.info(s"$owner/$packageName@$vers was discarded")
       case (_, fail) => sys.error(s"failed to discard $owner/$packageName@$vers: $fail")
     }
 
+  /** pgp sign remotely published artifacts then publish those signed artifacts.
+   *  this assumes artifacts are published remotely. signing artifacts doesn't
+   *  mean the signings themselves will be published so it is nessessary to publish
+   *  this immediately after.
+   */
   def remoteSign(packageName: String, vers: String, log: Logger): Unit =
     {
       val bty = repo
@@ -89,6 +99,10 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
       else sys.error(s"failed to sign $owner/$packageName@$vers: $body")
     }
 
+  /** synchronize a published set of artifacts for a pkg version to mvn central
+   *  this requires already having a sonatype oss account set up.
+   *  this is itself quite a task but in the case the user has done this in the past
+   *  this can be quiet a convenient feature */
   def syncMavenCentral(packageName: String, vers: String, creds: Seq[Credentials], log: Logger): Unit =
     {
       val bty = repo
@@ -150,6 +164,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
     }
   }
 
+  /** Lists versions of bintray packages corresponding to the current project */
   def packageVersions(packageName: String, log: Logger): Seq[String] =
     {
       import _root_.org.json4s._

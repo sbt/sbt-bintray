@@ -9,10 +9,14 @@ import scala.util.control.NonFatal
 
 object BintrayPlugin extends AutoPlugin {
   import BintrayKeys._
+  import InternalBintrayKeys._
 
   override def requires = sbt.plugins.JvmPlugin
   override def trigger = allRequirements
+  
+  override def globalSettings: Seq[Setting[_]] = globalPublishSettings
   override def projectSettings: Seq[Setting[_]] = bintraySettings
+
   object autoImport extends BintrayKeys {
   }
 
@@ -20,165 +24,147 @@ object BintrayPlugin extends AutoPlugin {
     bintrayCommonSettings ++ bintrayPublishSettings ++ bintrayQuerySettings
 
   def bintrayCommonSettings: Seq[Setting[_]] = Seq(
-    changeCredentials in bintray <<= changeCredentialsTask,
-    whoami in bintray <<= whoamiTask
+    bintrayChangeCredentials := {
+      Bintray.changeCredentials(bintrayCredentialsFile.value)
+    },
+    bintrayWhoami := {
+      Bintray.whoami(bintrayCredentialsFile.value, sLog.value)
+    }
   )
 
   def bintrayQuerySettings: Seq[Setting[_]] = Seq(
-    packageVersions in bintray <<= packageVersionsTask
+    bintrayPackageVersions <<= packageVersionsTask
+  )
+
+  def globalPublishSettings: Seq[Setting[_]] = Seq(
+    bintrayCredentialsFile in Global := Path.userHome / ".bintray" / ".credentials",
+    bintrayOrganization in Global := { if (sbtPlugin.value) Some("sbt") else None }
   )
 
   def bintrayPublishSettings: Seq[Setting[_]] = bintrayCommonSettings ++ Seq(
-    credentialsFile in bintray in Global := Path.userHome / ".bintray" / ".credentials",
-    name in bintray := moduleName.value,
-    bintrayOrganization in bintray in Global := { if (sbtPlugin.value) Some("sbt") else None },
+    bintrayPackageName := moduleName.value,
+    bintrayRepo := BintrayRepo(bintrayEnsureCredentials.value,
+      bintrayOrganization.value,
+      bintrayRepository.value),
     // todo: don't force this to be sbt-plugin-releases
-    repository in bintray in Global := { if (sbtPlugin.value) "sbt-plugin-releases" else "maven" },
+    bintrayRepository := { if (sbtPlugin.value) "sbt-plugin-releases" else "maven" },
     publishMavenStyle := {
       if (sbtPlugin.value) false else publishMavenStyle.value
     },
-    vcsUrl in bintray := Bintray.resolveVcsUrl.recover {
+    bintrayVcsUrl := Bintray.resolveVcsUrl.recover {
       case NonFatal(e) =>
         None
     }.get,
-    packageLabels in bintray := Nil,
+    bintrayPackageLabels := Nil,
     description in bintray <<= description,
     // note: publishTo may not have dependencies. therefore, we can not rely well on inline overrides
     // for inline credentials resolution we recommend defining bintrayCredentials _before_ mixing in the defaults
     // perhaps we should try overriding something in the publishConfig setting -- https://github.com/sbt/sbt-pgp/blob/master/pgp-plugin/src/main/scala/com/typesafe/sbt/pgp/PgpSettings.scala#L124-L131
     publishTo in bintray <<= publishToBintray,
     resolvers in bintray <<= appendBintrayResolver,
-    credentials in bintray <<= (credentialsFile in bintray).map {
-      Credentials(_) :: Nil
+    credentials in bintray := {
+      Credentials(bintrayCredentialsFile.value) :: Nil
     },
-    packageAttributes in bintray <<= (sbtPlugin, sbtVersion) {
-      (plugin, sbtVersion) =>
-        if (plugin) Map(AttrNames.sbtPlugin -> Seq(Attr.Boolean(plugin)))
-        else Map.empty
+    bintrayPackageAttributes := {
+      if (sbtPlugin.value) Map(AttrNames.sbtPlugin -> Seq(Attr.Boolean(sbtPlugin.value)))
+      else Map.empty
     },
-    versionAttributes in bintray <<= (crossScalaVersions, sbtPlugin, sbtVersion) {
-      (scalaVersions, plugin, sbtVersion) =>
-        val sv = Map(AttrNames.scalas -> scalaVersions.map(Attr.Version(_)))
-        if (plugin) sv ++ Map(AttrNames.sbtVersion-> Seq(Attr.Version(sbtVersion))) else sv
+    bintrayVersionAttributes := {
+      val scalaVersions = crossScalaVersions.value
+      val sv = Map(AttrNames.scalas -> scalaVersions.map(Attr.Version(_)))
+      if (sbtPlugin.value) sv ++ Map(AttrNames.sbtVersion-> Seq(Attr.Version(sbtVersion.value)))
+      else sv
     },
-    omitLicense in bintray in Global := { if (sbtPlugin.value) sbtPlugin.value else false },
-    ensureLicenses <<= ensureLicensesTask,
-    ensureCredentials <<= ensureCredentialsTask,
-    ensureBintrayPackageExists <<= ensurePackageTask,
-    publishVersionAttributes <<= publishVersionAttributesTask,
-    unpublish in bintray <<= unpublishTask.dependsOn(ensureBintrayPackageExists, ensureLicenses),
-    remoteSign in bintray <<= remoteSignTask,
-    syncMavenCentral in bintray <<= syncMavenCentralTask
+    bintrayOmitLicense := {
+      if (sbtPlugin.value) sbtPlugin.value
+      else false
+    },
+    bintrayEnsureLicenses := {
+      Bintray.ensureLicenses(licenses.value, bintrayOmitLicense.value)
+    },
+    bintrayEnsureCredentials := {
+      Bintray.ensuredCredentials(bintrayCredentialsFile.value).get
+    },
+    bintrayEnsureBintrayPackageExists <<= ensurePackageTask,
+    bintrayPublishVersionAttributes <<= publishVersionAttributesTask,
+    bintrayUnpublish := {
+      val e1 = bintrayEnsureBintrayPackageExists
+      val e2 = bintrayEnsureLicenses
+      val repo = bintrayRepo.value
+      repo.unpublish(bintrayPackageName.value, version.value, sLog.value)
+    },
+    bintrayRemoteSign := {
+      val repo = bintrayRepo.value
+      repo.remoteSign(bintrayPackageName.value, version.value, sLog.value)
+    },
+    bintraySyncMavenCentral := {
+      val repo = bintrayRepo.value
+      repo.syncMavenCentral(bintrayPackageName.value, version.value, credentials.value, sLog.value)
+    } // <<= syncMavenCentralTask
   ) ++ Seq(
     resolvers <++= resolvers in bintray,
     credentials <++= credentials in bintray,
     publishTo <<= publishTo in bintray,
     // We attach this to publish configruation, so that publish-signed in pgp plugin can work.
-    publishConfiguration <<= publishConfiguration.dependsOn(ensureBintrayPackageExists, ensureLicenses), 
+    publishConfiguration <<= publishConfiguration.dependsOn(bintrayEnsureBintrayPackageExists, bintrayEnsureLicenses), 
     publish <<= publishWithVersionAttrs
   )
 
   /** publishes version meta attributes after successfully publishing artifact files. this happens _after_
    *  a successful publish action */
   private def publishWithVersionAttrs: Initialize[Task[Unit]] =
-    (publish, publishVersionAttributes)(_ && _)
+    (publish, bintrayPublishVersionAttributes)(_ && _)
 
-  /** updates a package version with the values defined in versionAttributes in bintray */
+
   private def publishVersionAttributesTask: Initialize[Task[Unit]] =
     task {
-      val pkg = (name in bintray).value
-      val repo = BintrayRepo(ensureCredentials.value,
-          (bintrayOrganization in bintray).value,
-          (repository in bintray).value)
+      val repo = bintrayRepo.value
       repo.publishVersionAttributes(
-        pkg, version.value, (versionAttributes in bintray).value)
+        bintrayPackageName.value,
+        version.value,
+        bintrayVersionAttributes.value)
     }
 
-  /** Ensure user-specific bintray package exists. This will have a side effect of updating the packages attrs
-   *  when it exists.
-   *  todo(doug): Perhaps we want to factor that into an explicit task. */
   private def ensurePackageTask: Initialize[Task[Unit]] =
     task {
-      val pkg = (name in bintray).value
-      val vcs = (vcsUrl in bintray).value.getOrElse {
+      val vcs = bintrayVcsUrl.value.getOrElse {
         sys.error("""vcsUrl not defined. assign this with (vcsUrl in bintray) := Some("git@github.com:you/your-repo.git")""")
       }
-      val repo = BintrayRepo(ensureCredentials.value,
-          (bintrayOrganization in bintray).value,
-          (repository in bintray).value)
-      repo.ensurePackage(pkg,
-        (packageAttributes in bintray).value,
+      val repo = bintrayRepo.value
+      repo.ensurePackage(bintrayPackageName.value,
+        bintrayPackageAttributes.value,
         (description in bintray).value,
         vcs,
         licenses.value,
-        (packageLabels in bintray).value)
+        bintrayPackageLabels.value)
     }
 
   /** set a user-specific bintray endpoint for sbt's `publishTo` setting.*/
   private def publishToBintray: Initialize[Option[Resolver]] =
     setting {
-      val credsFile = (credentialsFile in bintray).value
-      val btyOrg = (bintrayOrganization in bintray).value
-      val repoName = (repository in bintray).value
-      val pkg = (name in bintray).value
-
+      val credsFile = bintrayCredentialsFile.value
+      val btyOrg = bintrayOrganization.value
+      val repoName = bintrayRepository.value
       // ensure that we have credentials to build a resolver that can publish to bintray
       Bintray.withRepo(credsFile, btyOrg, repoName) { repo =>
-        repo.buildPublishResolver(pkg,
+        repo.buildPublishResolver(bintrayPackageName.value,
           version.value,
           publishMavenStyle.value,
           sbtPlugin.value)
       }
     }
 
-  /** unpublish (delete) a version of a package */
-  private def unpublishTask: Initialize[Task[Unit]] =
-    task {
-      val pkg = (name in bintray).value
-      val repo = BintrayRepo(ensureCredentials.value,
-        (bintrayOrganization in bintray).value,
-        (repository in bintray).value)
-      repo.unpublish(pkg, version.value, sLog.value)
-    }
-
-  /** pgp sign remotely published artifacts then publish those signed artifacts.
-   *  this assumes artifacts are published remotely. signing artifacts doesn't
-   *  mean the signings themselves will be published so it is nessessary to publish
-   *  this immediately after.
-   */
-  private def remoteSignTask: Initialize[Task[Unit]] =
-    task {
-      val pkg = (name in bintray).value
-      val repo = BintrayRepo(ensureCredentials.value,
-          (bintrayOrganization in bintray).value,
-          (repository in bintray).value)
-      repo.remoteSign(pkg, version.value, sLog.value)
-    }
-
-  /** synchronize a published set of artifacts for a pkg version to mvn central
-   *  this requires already having a sonatype oss account set up.
-   *  this is itself quite a task but in the case the user has done this in the past
-   *  this can be quiet a convenient feature */
-  private def syncMavenCentralTask: Initialize[Task[Unit]] =
-    task {
-      val pkg = (name in bintray).value
-      val repo = BintrayRepo(ensureCredentials.value,
-          (bintrayOrganization in bintray).value,
-          (repository in bintray).value)
-      repo.syncMavenCentral(pkg, version.value, credentials.value, sLog.value)
-    }
-
   /** if credentials exist, append a user-specific resolver */
   private def appendBintrayResolver: Initialize[Seq[Resolver]] =
     setting {
-      val creds = (credentialsFile in bintray).value
-      val btyOrg = (bintrayOrganization in bintray).value
-      val repo = (repository in bintray).value
+      val creds = bintrayCredentialsFile.value
+      val btyOrg = bintrayOrganization.value
+      val repoName = bintrayRepository.value
       BintrayCredentials.read(creds).fold({ err =>
         println(s"bintray credentials $err is malformed")
         Nil
       }, {
-        _.map { case BintrayCredentials(user, _) => Seq(Opts.resolver.repo(btyOrg.getOrElse(user), repo)) }
+        _.map { case BintrayCredentials(user, _) => Seq(Opts.resolver.repo(btyOrg.getOrElse(user), repoName)) }
          .getOrElse(Nil)
       })
     }
@@ -186,34 +172,11 @@ object BintrayPlugin extends AutoPlugin {
   /** Lists versions of bintray packages corresponding to the current project */
   private def packageVersionsTask: Initialize[Task[Seq[String]]] =
     task {
-      val credsFile = (credentialsFile in bintray).value
-      val btyOrg = (bintrayOrganization in bintray).value
-      val repoName = (repository in bintray).value
-      val pkg = (name in bintray).value
+      val credsFile = bintrayCredentialsFile.value
+      val btyOrg = bintrayOrganization.value
+      val repoName = bintrayRepository.value
       (Bintray.withRepo(credsFile, btyOrg, repoName) { repo =>
-        repo.packageVersions(pkg, sLog.value)
+        repo.packageVersions(bintrayPackageName.value, sLog.value)
       }).getOrElse(Nil)
-    }
-
-  /** assign credentials or ask for new ones */
-  private def changeCredentialsTask: Initialize[Task[Unit]] =
-    (credentialsFile in bintray).map { Bintray.changeCredentials(_) }
-
-  /** log who bintry sbt thinks you are with respect to bintray api authorization */
-  private def whoamiTask: Initialize[Task[String]] =
-    task {
-      Bintray.whoami((credentialsFile in bintray).value, sLog.value)
-    }
-
-  private def ensureCredentialsTask: Initialize[Task[BintrayCredentials]] =
-    task {
-      Bintray.ensuredCredentials(
-        (credentialsFile in bintray).value).get
-    }
-
-  /** publishing to bintray requires you must have defined a license they support */
-  private def ensureLicensesTask: Initialize[Task[Unit]] =
-    task {
-      Bintray.ensureLicenses(licenses.value, omitLicense.value)
     }
 }

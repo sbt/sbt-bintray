@@ -3,62 +3,64 @@ package bintray
 import sbt._
 
 trait BintrayKeys {
-  val bintray = TaskKey[String](
-    "bintray", "bintray-sbt is an interface for the bintray package service")
+  val bintray = taskKey[String]("bintray-sbt is an interface for the bintray package service")
 
-  val bintrayOrganization = SettingKey[Option[String]](
-    "bintrayOrganization", "Bintray organization name to publish to. Defaults to None unless project is an sbtPlugin")
+  val bintrayOrganization = settingKey[Option[String]](
+    "Bintray organization name to publish to. Defaults to None unless project is an sbtPlugin")
 
-  val repository = SettingKey[String](
-    "repository", "Bintray repository to publish to. Defaults to 'maven' unless project is an sbtPlugin")
+  val bintrayPackageName = settingKey[String](
+    "Bintray package name")
 
-  val packageLabels = SettingKey[Seq[String]](
-    "packageLabels", "List of labels associated with your bintray package")
+  val bintrayRepository = settingKey[String](
+    "Bintray repository to publish to. Defaults to 'maven' unless project is an sbtPlugin")
 
-  val packageAttributes = SettingKey[AttrMap](
-    "packageAttributes", "List of bintray package metadata attributes")
+  val bintrayPackageLabels = settingKey[Seq[String]](
+    "List of labels associated with your bintray package")
 
-  val versionAttributes = SettingKey[AttrMap](
-    "versionAttributes", "List of bintray version metadata attributes")
+  val bintrayPackageAttributes = settingKey[AttrMap](
+    "List of bintray package metadata attributes")
 
-  val credentialsFile = SettingKey[File](
-    "credentialsFile", "File containing bintray api credentials")
+  val bintrayVersionAttributes = settingKey[AttrMap](
+    "List of bintray version metadata attributes")
 
-  val packageVersions = TaskKey[Seq[String]](
-    "packageVersions", "List bintray versions for the current package")
+  val bintrayCredentialsFile = settingKey[File](
+    "File containing bintray api credentials")
 
-  val changeCredentials = TaskKey[Unit](
-    "changeCredentials", "Change your current bintray credentials")
+  val bintrayPackageVersions = taskKey[Seq[String]](
+    "List bintray versions for the current package")
 
-  val whoami = TaskKey[String](
-    "whoami", "Print the name of the currently authenticated bintray user")
+  val bintrayChangeCredentials = taskKey[Unit](
+    "Change your current bintray credentials")
 
-  val omitLicense = SettingKey[Boolean](
-     "omitLicense", "Omit license, useful if publishing to a private repo. Defaults to false")
+  val bintrayWhoami = taskKey[String](
+    "Print the name of the currently authenticated bintray user")
 
-  val ensureLicenses = TaskKey[Unit](
-    "bintrayEnsureLicenses", "Ensure that the licenses for bintray are valid.")
+  val bintrayOmitLicense = settingKey[Boolean](
+     "Omit license, useful if publishing to a private repo. Defaults to false")
 
-  val ensureCredentials = TaskKey[BintrayCredentials](
-    "bintrayEnsureCredentials", "Ensure that the credentials for bintray are valid.")
+  val bintrayEnsureLicenses = taskKey[Unit](
+    "Ensure that the licenses for bintray are valid.")
 
-  val ensureBintrayPackageExists = TaskKey[Unit](
-    "bintrayEnsurePackage", "Ensure that the bintray package exists and is valid.")
+  val bintrayEnsureCredentials = taskKey[BintrayCredentials](
+    "Ensure that the credentials for bintray are valid.")
 
-  val publishVersionAttributes = TaskKey[Unit](
-    "bintrayPublishVersionAttributes", "Publish the attributes for the current version of this package to bintray.")
+  val bintrayEnsureBintrayPackageExists = taskKey[Unit](
+    "Ensure that the bintray package exists and is valid.")
 
-  val unpublish = TaskKey[Unit](
-    "unpublish", "Unpublishes a version of package on bintray")
+  val bintrayPublishVersionAttributes = taskKey[Unit](
+    "Publish the attributes for the current version of this package to bintray.")
 
-  val remoteSign = TaskKey[Unit](
-    "remoteSign", "PGP sign artifacts hosted remotely on bintray. (See also https://bintray.com/docs/uploads/uploads_gpgsigning.html)")
+  val bintrayUnpublish = taskKey[Unit](
+    "Unpublishes a version of package on bintray")
 
-  val syncMavenCentral = TaskKey[Unit](
-    "syncMavenCentral", "Sync bintray-published artifacts with maven central")
+  val bintrayRemoteSign = taskKey[Unit](
+    "PGP sign artifacts hosted remotely on bintray. (See also https://bintray.com/docs/uploads/uploads_gpgsigning.html)")
 
-  val vcsUrl = SettingKey[Option[String]](
-    "vcsUrl", "Cannonical url for hosted version control repository")
+  val bintraySyncMavenCentral = taskKey[Unit](
+    "Sync bintray-published artifacts with maven central")
+
+  val bintrayVcsUrl = settingKey[Option[String]](
+    "Cannonical url for hosted version control repository")
 
   /** named used for common package attributes lifted from sbt
    *  build definitions */
@@ -70,3 +72,10 @@ trait BintrayKeys {
 }
 
 object BintrayKeys extends BintrayKeys {}
+
+trait InternalBintrayKeys {
+  val bintrayRepo = taskKey[BintrayRepo](
+    "Bintray repository.")
+}
+
+object InternalBintrayKeys extends InternalBintrayKeys {}

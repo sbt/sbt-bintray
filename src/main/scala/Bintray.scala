@@ -50,6 +50,7 @@ object Bintray {
       case creds => creds
     })
 
+  /** assign credentials or ask for new ones */
   private[bintray] def changeCredentials(credsFile: File): Unit =
     BintrayCredentials.read(credsFile).fold(sys.error(_), _ match {
       case None =>
