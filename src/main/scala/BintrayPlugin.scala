@@ -41,7 +41,7 @@ object BintrayPlugin extends AutoPlugin {
   )
 
   def bintrayPublishSettings: Seq[Setting[_]] = bintrayCommonSettings ++ Seq(
-    bintrayPackageName := moduleName.value,
+    bintrayPackage := moduleName.value,
     bintrayRepo := BintrayRepo(bintrayEnsureCredentials.value,
       bintrayOrganization.value,
       bintrayRepository.value),
@@ -90,15 +90,15 @@ object BintrayPlugin extends AutoPlugin {
       val e1 = bintrayEnsureBintrayPackageExists
       val e2 = bintrayEnsureLicenses
       val repo = bintrayRepo.value
-      repo.unpublish(bintrayPackageName.value, version.value, sLog.value)
+      repo.unpublish(bintrayPackage.value, version.value, sLog.value)
     },
     bintrayRemoteSign := {
       val repo = bintrayRepo.value
-      repo.remoteSign(bintrayPackageName.value, version.value, sLog.value)
+      repo.remoteSign(bintrayPackage.value, version.value, sLog.value)
     },
     bintraySyncMavenCentral := {
       val repo = bintrayRepo.value
-      repo.syncMavenCentral(bintrayPackageName.value, version.value, credentials.value, sLog.value)
+      repo.syncMavenCentral(bintrayPackage.value, version.value, credentials.value, sLog.value)
     } // <<= syncMavenCentralTask
   ) ++ Seq(
     resolvers <++= resolvers in bintray,
@@ -118,7 +118,7 @@ object BintrayPlugin extends AutoPlugin {
     task {
       val repo = bintrayRepo.value
       repo.publishVersionAttributes(
-        bintrayPackageName.value,
+        bintrayPackage.value,
         version.value,
         bintrayVersionAttributes.value)
     }
@@ -129,7 +129,7 @@ object BintrayPlugin extends AutoPlugin {
         sys.error("""vcsUrl not defined. assign this with (vcsUrl in bintray) := Some("git@github.com:you/your-repo.git")""")
       }
       val repo = bintrayRepo.value
-      repo.ensurePackage(bintrayPackageName.value,
+      repo.ensurePackage(bintrayPackage.value,
         bintrayPackageAttributes.value,
         (description in bintray).value,
         vcs,
@@ -145,7 +145,7 @@ object BintrayPlugin extends AutoPlugin {
       val repoName = bintrayRepository.value
       // ensure that we have credentials to build a resolver that can publish to bintray
       Bintray.withRepo(credsFile, btyOrg, repoName) { repo =>
-        repo.buildPublishResolver(bintrayPackageName.value,
+        repo.buildPublishResolver(bintrayPackage.value,
           version.value,
           publishMavenStyle.value,
           sbtPlugin.value)
@@ -174,7 +174,7 @@ object BintrayPlugin extends AutoPlugin {
       val btyOrg = bintrayOrganization.value
       val repoName = bintrayRepository.value
       (Bintray.withRepo(credsFile, btyOrg, repoName) { repo =>
-        repo.packageVersions(bintrayPackageName.value, sLog.value)
+        repo.packageVersions(bintrayPackage.value, sLog.value)
       }).getOrElse(Nil)
     }
 }

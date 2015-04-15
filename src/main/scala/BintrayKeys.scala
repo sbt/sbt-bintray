@@ -8,7 +8,7 @@ trait BintrayKeys {
   val bintrayOrganization = settingKey[Option[String]](
     "Bintray organization name to publish to. Defaults to None unless project is an sbtPlugin")
 
-  val bintrayPackageName = settingKey[String](
+  val bintrayPackage = settingKey[String](
     "Bintray package name")
 
   val bintrayRepository = settingKey[String](
