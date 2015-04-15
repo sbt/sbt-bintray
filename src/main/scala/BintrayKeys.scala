@@ -5,6 +5,12 @@ import sbt._
 trait BintrayKeys {
   val bintray = taskKey[String]("bintray-sbt is an interface for the bintray package service")
 
+  val bintrayRelease = taskKey[Unit](
+    "Releases a version of package on bintray")
+
+  val bintrayReleaseOnPublish = settingKey[Boolean](
+    "When set to true, publish also runs bintrayRelease.")
+
   val bintrayOrganization = settingKey[Option[String]](
     "Bintray organization name to publish to. Defaults to None unless project is an sbtPlugin")
 
@@ -46,9 +52,6 @@ trait BintrayKeys {
 
   val bintrayEnsureBintrayPackageExists = taskKey[Unit](
     "Ensure that the bintray package exists and is valid.")
-
-  val bintrayPublishVersionAttributes = taskKey[Unit](
-    "Publish the attributes for the current version of this package to bintray.")
 
   val bintrayUnpublish = taskKey[Unit](
     "Unpublishes a version of package on bintray")

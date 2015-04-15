@@ -12,12 +12,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 case class BintrayMavenRepository(
-  underlying: Repository, bty: Client#Repo#Package)
+  underlying: Repository,
+  bty: Client#Repo#Package,
+  release: Boolean)
   extends AbstractRepository with DispatchHandlers {
 
   override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit =
     Await.result(
-      bty.mvnUpload(transform(dest), src).publish(true)(asStatusAndBody),
+      bty.mvnUpload(transform(dest), src).publish(release)(asStatusAndBody),
       Duration.Inf) match {
         case (201, _) =>
         case (_, fail) =>
@@ -42,13 +44,14 @@ case class BintrayMavenRepository(
 
 case class BintrayIvyRepository(
   underlying: Repository,
-  bty: Client#Repo#Package#Version)
+  bty: Client#Repo#Package#Version,
+  release: Boolean)
   extends AbstractRepository with DispatchHandlers {
 
   override def put(
     artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit =
     Await.result(
-      bty.upload(dest, src).publish(true)(asStatusAndBody),
+      bty.upload(dest, src).publish(release)(asStatusAndBody),
       Duration.Inf) match {
         case (201, _) =>
         case (_, fail) =>
@@ -66,7 +69,8 @@ case class BintrayIvyRepository(
 case class BintrayIvyResolver(
   name: String,
   bty: Client#Repo#Package#Version,
-  patterns: Seq[String])
+  patterns: Seq[String],
+  release: Boolean)
   extends URLResolver {
   import collection.JavaConverters._
   setName(name)
@@ -74,15 +78,18 @@ case class BintrayIvyResolver(
   setArtifactPatterns(patterns.toList.asJava)
 
   override def setRepository(repository: Repository): Unit =
-    super.setRepository(BintrayIvyRepository(repository, bty))
+    super.setRepository(BintrayIvyRepository(repository, bty, release))
 }
 
 case class BintrayMavenResolver(
-  name: String, rootURL: String, bty: Client#Repo#Package)
+  name: String,
+  rootURL: String,
+  bty: Client#Repo#Package,
+  release: Boolean)
   extends IBiblioResolver {
   setName(name)
   setM2compatible(true)
   setRoot(rootURL)
   override def setRepository(repository: Repository): Unit =
-    super.setRepository(BintrayMavenRepository(repository, bty))
+    super.setRepository(BintrayMavenRepository(repository, bty, release))
 }

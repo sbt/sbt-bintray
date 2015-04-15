@@ -8,14 +8,15 @@ object Opts {
     @deprecated("use sbt.Resolver.jcenterRepo instead (available in sbt 0.13.6+)", since = "0.2.0")
     val jcenter = MavenRepository("BintrayJCenter", "https://jcenter.bintray.com")
 
-    def publishTo(repo: Client#Repo, pkg: Client#Repo#Package, version: String, mvnStyle: Boolean = true, isSbtPlugin: Boolean = false) =
+    def publishTo(repo: Client#Repo, pkg: Client#Repo#Package, version: String,
+      mvnStyle: Boolean = true, isSbtPlugin: Boolean = false, release: Boolean = false) =
       if (mvnStyle) new RawRepository(
         BintrayMavenResolver(s"Bintray-Maven-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
-                             s"https://api.bintray.com/maven/${repo.subject}/${repo.repo}/${repo.repo}", pkg))
+                             s"https://api.bintray.com/maven/${repo.subject}/${repo.repo}/${repo.repo}", pkg, release))
       else new RawRepository(
         BintrayIvyResolver(s"Bintray-${if (isSbtPlugin) "Sbt" else "Ivy"}-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
                            pkg.version(version),
-                           sbt.Resolver.ivyStylePatterns.artifactPatterns))
+                           sbt.Resolver.ivyStylePatterns.artifactPatterns, release))
 
     @deprecated("""use sbt.Resolver.bintrayRepo(owner,"maven") instead (available in sbt 0.13.6+)""", since = "0.2.0")
     def mavenRepo(name: String) = repo(name, "maven")

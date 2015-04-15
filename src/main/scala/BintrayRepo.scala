@@ -47,7 +47,8 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
         s"was not able to find or create a package for $owner in $repo named $packageName")
     }
 
-  def buildPublishResolver(packageName: String, vers: String, mvnStyle: Boolean, isSbtPlugin: Boolean): Resolver =
+  def buildPublishResolver(packageName: String, vers: String, mvnStyle: Boolean,
+    isSbtPlugin: Boolean, isRelease: Boolean): Resolver =
     {
       val bty = repo
       val pkg = bty.get(packageName)
@@ -56,7 +57,13 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
       // deviates from that expecation
       if ("maven" == repo && !mvnStyle) println(
         "you have opted to publish to a repository named 'maven' but publishMavenStyle is assigned to false. This may result in unexpected behavior")
-      Opts.resolver.publishTo(bty, pkg, vers, mvnStyle, isSbtPlugin)
+      Opts.resolver.publishTo(bty, pkg, vers, mvnStyle, isSbtPlugin, isRelease)
+    }
+
+  def release(packageName: String, vers: String, log: Logger): Unit =
+    await.result(repo.get(packageName).version(vers).publish(asStatusAndBody)) match {
+      case (200, _) => log.info(s"$owner/$packageName@$vers was released")
+      case (_, fail) => sys.error(s"failed to release $owner/$packageName@$vers: $fail")
     }
 
   /** unpublish (delete) a version of a package */

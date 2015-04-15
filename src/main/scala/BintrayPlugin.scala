@@ -2,7 +2,7 @@ package bintray
 
 import bintry.Attr
 import sbt.{ AutoPlugin, Credentials, Global, Path, Resolver, Setting, Task }
-import sbt.Def.{ Initialize, setting, task }
+import sbt.Def.{ Initialize, setting, task, taskDyn }
 import sbt.Keys._
 import sbt.Path.richFile
 
@@ -41,6 +41,7 @@ object BintrayPlugin extends AutoPlugin {
   )
 
   def bintrayPublishSettings: Seq[Setting[_]] = bintrayCommonSettings ++ Seq(
+    bintrayReleaseOnPublish := false,
     bintrayPackage := moduleName.value,
     bintrayRepo := BintrayRepo(bintrayEnsureCredentials.value,
       bintrayOrganization.value,
@@ -85,7 +86,6 @@ object BintrayPlugin extends AutoPlugin {
       Bintray.ensuredCredentials(bintrayCredentialsFile.value).get
     },
     bintrayEnsureBintrayPackageExists <<= ensurePackageTask,
-    bintrayPublishVersionAttributes <<= publishVersionAttributesTask,
     bintrayUnpublish := {
       val e1 = bintrayEnsureBintrayPackageExists
       val e2 = bintrayEnsureLicenses
@@ -99,20 +99,34 @@ object BintrayPlugin extends AutoPlugin {
     bintraySyncMavenCentral := {
       val repo = bintrayRepo.value
       repo.syncMavenCentral(bintrayPackage.value, version.value, credentials.value, sLog.value)
-    } // <<= syncMavenCentralTask
+    },
+    bintrayRelease := {
+      val _ = publishVersionAttributesTask.value
+      val repo = bintrayRepo.value
+      repo.release(bintrayPackage.value, version.value, sLog.value)
+    }
   ) ++ Seq(
     resolvers <++= resolvers in bintray,
     credentials <++= credentials in bintray,
     publishTo <<= publishTo in bintray,
     // We attach this to publish configruation, so that publish-signed in pgp plugin can work.
     publishConfiguration <<= publishConfiguration.dependsOn(bintrayEnsureBintrayPackageExists, bintrayEnsureLicenses), 
-    publish <<= publishWithVersionAttrs
+    publish := dynamicallyPublish.value
   )
 
-  /** publishes version meta attributes after successfully publishing artifact files. this happens _after_
-   *  a successful publish action */
-  private def publishWithVersionAttrs: Initialize[Task[Unit]] =
-    (publish, bintrayPublishVersionAttributes)(_ && _)
+  private def dynamicallyPublish: Initialize[Task[Unit]] =
+    taskDyn {
+      val _ = publish.value
+      val isRelease = bintrayReleaseOnPublish.value
+      if (isRelease) bintrayRelease
+      else warnToRelease
+    }
+
+  private def warnToRelease: Initialize[Task[Unit]] =
+    task {
+      val log = sLog.value
+      log.warn("You must run bintrayRelease once all artifacts are staged.")
+    }
 
   private def publishVersionAttributesTask: Initialize[Task[Unit]] =
     task {
@@ -148,7 +162,8 @@ object BintrayPlugin extends AutoPlugin {
         repo.buildPublishResolver(bintrayPackage.value,
           version.value,
           publishMavenStyle.value,
-          sbtPlugin.value)
+          sbtPlugin.value,
+          bintrayReleaseOnPublish.value)
       }
     }
 
