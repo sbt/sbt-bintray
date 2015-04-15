@@ -1,13 +1,23 @@
 package bintray
 
 import sbt._
-import bintry.Licenses
+import bintry.{ Licenses, Client }
 import scala.util.Try
 
 object Bintray {
   val defaultMavenRepository = "maven"
   // http://www.scala-sbt.org/0.13/docs/Bintray-For-Plugins.html
   val defaultSbtPluginRepository = "sbt-plugins"
+
+  def publishTo(repo: Client#Repo, pkg: Client#Repo#Package, version: String,
+    mvnStyle: Boolean = true, isSbtPlugin: Boolean = false, release: Boolean = false): Resolver =
+    if (mvnStyle) new RawRepository(
+      BintrayMavenResolver(s"Bintray-Maven-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
+                           s"https://api.bintray.com/maven/${repo.subject}/${repo.repo}/${repo.repo}", pkg, release))
+    else new RawRepository(
+      BintrayIvyResolver(s"Bintray-${if (isSbtPlugin) "Sbt" else "Ivy"}-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
+                         pkg.version(version),
+                         sbt.Resolver.ivyStylePatterns.artifactPatterns, release))
 
   def whoami(credsFile: File, log: Logger): String =
     {
@@ -62,6 +72,15 @@ object Bintray {
       case Some(BintrayCredentials(user, pass)) =>
         saveBintrayCredentials(credsFile)(requestCredentials(Some(user), Some(pass)))
     })    
+
+  private[bintray] def buildResolvers(credsFile: File, org: Option[String], repoName: String): Seq[Resolver] =
+    BintrayCredentials.read(credsFile).fold({ err =>
+      println(s"bintray credentials $err is malformed")
+      Nil
+    }, {
+      _.map { case BintrayCredentials(user, _) => Seq(Resolver.bintrayRepo(org.getOrElse(user), repoName)) }
+      .getOrElse(Nil)
+    })
 
   private def saveBintrayCredentials(to: File)(creds: (String, String)) = {
     println(s"saving credentials to $to")

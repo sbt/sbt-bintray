@@ -61,7 +61,11 @@ object BintrayPlugin extends AutoPlugin {
     // for inline credentials resolution we recommend defining bintrayCredentials _before_ mixing in the defaults
     // perhaps we should try overriding something in the publishConfig setting -- https://github.com/sbt/sbt-pgp/blob/master/pgp-plugin/src/main/scala/com/typesafe/sbt/pgp/PgpSettings.scala#L124-L131
     publishTo in bintray <<= publishToBintray,
-    resolvers in bintray <<= appendBintrayResolver,
+    resolvers in bintray := {
+      Bintray.buildResolvers(bintrayCredentialsFile.value,
+        bintrayOrganization.value,
+        bintrayRepository.value)
+    },
     credentials in bintray := {
       Credentials(bintrayCredentialsFile.value) :: Nil
     },
@@ -166,22 +170,7 @@ object BintrayPlugin extends AutoPlugin {
           bintrayReleaseOnPublish.value)
       }
     }
-
-  /** if credentials exist, append a user-specific resolver */
-  private def appendBintrayResolver: Initialize[Seq[Resolver]] =
-    setting {
-      val creds = bintrayCredentialsFile.value
-      val btyOrg = bintrayOrganization.value
-      val repoName = bintrayRepository.value
-      BintrayCredentials.read(creds).fold({ err =>
-        println(s"bintray credentials $err is malformed")
-        Nil
-      }, {
-        _.map { case BintrayCredentials(user, _) => Seq(Opts.resolver.repo(btyOrg.getOrElse(user), repoName)) }
-         .getOrElse(Nil)
-      })
-    }
-
+  
   /** Lists versions of bintray packages corresponding to the current project */
   private def packageVersionsTask: Initialize[Task[Seq[String]]] =
     task {
