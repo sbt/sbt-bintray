@@ -5,7 +5,6 @@ import sbt.{ AutoPlugin, Credentials, Global, Path, Resolver, Setting, Task }
 import sbt.Def.{ Initialize, setting, task }
 import sbt.Keys._
 import sbt.Path.richFile
-import scala.util.control.NonFatal
 
 object BintrayPlugin extends AutoPlugin {
   import BintrayKeys._
@@ -51,10 +50,7 @@ object BintrayPlugin extends AutoPlugin {
     publishMavenStyle := {
       if (sbtPlugin.value) false else publishMavenStyle.value
     },
-    bintrayVcsUrl := Bintray.resolveVcsUrl.recover {
-      case NonFatal(e) =>
-        None
-    }.get,
+    bintrayVcsUrl := Bintray.resolveVcsUrl.recover { case _ => None }.get,
     bintrayPackageLabels := Nil,
     description in bintray <<= description,
     // note: publishTo may not have dependencies. therefore, we can not rely well on inline overrides
