@@ -1,43 +1,14 @@
 package bintray
 
-import bintry.{ Attr, Client, Licenses }
-import dispatch.as
-import java.io.File
+import bintry.Attr
 import sbt.{ Credentials, Global, Path, Resolver, Setting, Task }
 import sbt.Def.{ Initialize, setting, task }
 import sbt.Keys._
 import sbt.Path.richFile
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration.Duration
-import scala.util.Try
 import scala.util.control.NonFatal
 
-object Plugin extends sbt.Plugin with DispatchHandlers {
+object Plugin extends sbt.Plugin {
   import bintray.Keys._
-
-  private[bintray] object await {
-    def result[T](f: => Future[T]) = Await.result(f, Duration.Inf)
-    def ready[T](f: => Future[T]) = Await.ready(f, Duration.Inf)
-  }
-
-  def resolveVcsUrl: Try[Option[String]] =
-    Try {
-      val pushes =
-        sbt.Process("git" :: "remote" :: "-v" :: Nil).!!.split("\n")
-         .map {
-           _.split("""\s+""") match {
-             case Array(name, url, "(push)") =>
-               Some((name, url))
-             case e =>
-               None
-           }
-         }.flatten
-      pushes
-        .find { case (name, _) => "origin" == name }
-        .orElse(pushes.headOption)
-        .map { case (_, url) => url }
-    }
 
   /** publishes version meta attributes after successfully publishing artifact files. this happens _after_
    *  a successful publish action */
@@ -47,16 +18,12 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
   /** updates a package version with the values defined in versionAttributes in bintray */
   private def publishVersionAttributesTask: Initialize[Task[Unit]] =
     task {
-      val tmp = ensureCredentials.value
-      val btyOrg = (bintrayOrganization in bintray).value
-      val repo = (repository in bintray).value
-      val versionAttrs = (versionAttributes in bintray).value
       val pkg = (name in bintray).value
-      val vers = version.value
-      val BintrayCredentials(user, key) = tmp
-      val bty = Client(user, key).repo(btyOrg.getOrElse(user), repo)
-      val attributes = versionAttrs.toList
-      await.ready(bty.get(pkg).version(vers).attrs.update(attributes:_*)())
+      val repo = BintrayRepo(ensureCredentials.value,
+          (bintrayOrganization in bintray).value,
+          (repository in bintray).value)
+      repo.publishVersionAttributes(
+        pkg, version.value, (versionAttributes in bintray).value)
     }
 
   /** Ensure user-specific bintray package exists. This will have a side effect of updating the packages attrs
@@ -64,40 +31,19 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
    *  todo(doug): Perhaps we want to factor that into an explicit task. */
   private def ensurePackageTask: Initialize[Task[Unit]] =
     task {
-      val tmp = ensureCredentials.value
-      val BintrayCredentials(user, key) = tmp
-      val btyOrg = (bintrayOrganization in bintray).value
-      val owner = btyOrg.getOrElse(user)
-      val repo = (repository in bintray).value
       val pkg = (name in bintray).value
-      val desc = (description in bintray).value
-      val labels = (packageLabels in bintray).value
-      val attrs = (packageAttributes in bintray).value
-      val lics = licenses.value
       val vcs = (vcsUrl in bintray).value.getOrElse {
         sys.error("""vcsUrl not defined. assign this with (vcsUrl in bintray) := Some("git@github.com:you/your-repo.git")""")
       }
-      val bty = Client(user, key).repo(owner, repo)
-
-      val exists =
-        if (await.result(bty.get(pkg)(asFound))) {
-          // update existing attrs
-          if (!attrs.isEmpty) await.ready(bty.get(pkg).attrs.update(attrs.toList:_*)())
-          true
-        } else {
-          val created = await.result(
-            bty.createPackage(pkg)
-              .desc(desc)
-              .vcs(vcs)
-              .licenses(lics.map { case (name, _) => name }:_*)
-              .labels(labels:_*)(asCreated))
-          // assign attrs
-          if (created && !attrs.isEmpty) await.ready(
-            bty.get(pkg).attrs.set(attrs.toList:_*)())
-          created
-        }
-      if (!exists) sys.error(
-        s"was not able to find or create a package for $owner in $repo named $pkg")
+      val repo = BintrayRepo(ensureCredentials.value,
+          (bintrayOrganization in bintray).value,
+          (repository in bintray).value)
+      repo.ensurePackage(pkg,
+        (packageAttributes in bintray).value,
+        (description in bintray).value,
+        vcs,
+        licenses.value,
+        (packageLabels in bintray).value)
     }
 
   /** set a user-specific bintray endpoint for sbt's `publishTo` setting.*/
@@ -105,43 +51,26 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
     setting {
       val credsFile = (credentialsFile in bintray).value
       val btyOrg = (bintrayOrganization in bintray).value
-      val repo = (repository in bintray).value
+      val repoName = (repository in bintray).value
       val pkg = (name in bintray).value
-      val vers = version.value
-      val mvnStyle = publishMavenStyle.value
-      val isSbtPlugin = sbtPlugin.value
+
       // ensure that we have credentials to build a resolver that can publish to bintray
-      ensuredCredentials(
-        credsFile, prompt = false).map {
-        case BintrayCredentials(user, pass) =>
-          val btyRepo = Client(user, pass).repo(btyOrg.getOrElse(user), repo)
-          val btyPkg = btyRepo.get(pkg)
-          // warn the user that bintray expects maven published artifacts to be published to the `maven` repo
-          // but they have explicitly opted into a publish style and/or repo that
-          // deviates from that expecation
-          if ("maven" == repo && !mvnStyle) println(
-            "you have opted to publish to a repository named 'maven' but publishMavenStyle is assigned to false. This may result in unexpected behavior")
-          Opts.resolver.publishTo(btyRepo, btyPkg, vers, mvnStyle, isSbtPlugin)
+      Bintray.withRepo(credsFile, btyOrg, repoName) { repo =>
+        repo.buildPublishResolver(pkg,
+          version.value,
+          publishMavenStyle.value,
+          sbtPlugin.value)
       }
     }
 
   /** unpublish (delete) a version of a package */
   private def unpublishTask: Initialize[Task[Unit]] =
     task {
-      val tmp = ensureCredentials.value
-      val BintrayCredentials(user, key) = tmp
-      val btyOrg = (bintrayOrganization in bintray).value
-      val repo = (repository in bintray).value
-      val owner = btyOrg.getOrElse(user)
-      val bty = Client(user, key).repo(owner, repo)
       val pkg = (name in bintray).value
-      val vers = version.value
-      val log = streams.value.log
-      await.result(
-        bty.get(pkg).version(vers).delete(asStatusAndBody)) match {
-          case (200, _) =>  log.info(s"$owner/$pkg@$vers was discarded")
-          case (_, fail) => sys.error(s"failed to discard $owner/$pkg@$vers: $fail")
-        }
+      val repo = BintrayRepo(ensureCredentials.value,
+        (bintrayOrganization in bintray).value,
+        (repository in bintray).value)
+      repo.unpublish(pkg, version.value, sLog.value)
     }
 
   /** pgp sign remotely published artifacts then publish those signed artifacts.
@@ -151,38 +80,11 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
    */
   private def remoteSignTask: Initialize[Task[Unit]] =
     task {
-      val log = streams.value.log
-      val tmp = ensureCredentials.value
-      val BintrayCredentials(user, key) = tmp
-      val btyOrg = (bintrayOrganization in bintray).value
-      val owner = btyOrg.getOrElse(user)
-      val repo = (repository in bintray).value
-      val bty = Client(user, key).repo(owner, repo)
       val pkg = (name in bintray).value
-      val vers = version.value
-      val btyVersion = bty.get(pkg).version(vers)
-      val passphrase = Cache.get("pgp.pass").orElse(Prompt.descretely("Enter pgp passphrase"))
-        .getOrElse {
-          sys.error("pgp passphrase is required")
-        }
-      val (status, body) = await.result(
-        btyVersion.sign(passphrase)(asStatusAndBody))
-      if (status == 200) {
-        // we want to only ask for pgp credentials once for a given sbt session
-        // so let's cache them for later use in the session after we're reasonable
-        // sure they are valid
-        Cache.put(("pgp.pass", passphrase))
-        log.info(s"$owner/$pkg@$vers was signed")
-        // after signing the remote artifacts, they remain
-        // unpublished (not available for download)
-        // we are opting to publish those unpublished
-        // artifacts here
-        val (pubStatus, pubBody) = await.result(
-          btyVersion.publish(asStatusAndBody))
-        if (pubStatus != 200) sys.error(
-          s"failed to publish signed artifacts for $owner/$pkg@$vers: $pubBody")
-      }
-      else sys.error(s"failed to sign $owner/$pkg@$vers: $body")
+      val repo = BintrayRepo(ensureCredentials.value,
+          (bintrayOrganization in bintray).value,
+          (repository in bintray).value)
+      repo.remoteSign(pkg, version.value, sLog.value)
     }
 
   /** synchronize a published set of artifacts for a pkg version to mvn central
@@ -191,35 +93,11 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
    *  this can be quiet a convenient feature */
   private def syncMavenCentralTask: Initialize[Task[Unit]] =
     task {
-      val log = streams.value.log
-      val tmp = ensureCredentials.value
-      val BintrayCredentials(user, key) = tmp
-      val repo = (repository in bintray).value
-      val btyOrg = (bintrayOrganization in bintray).value
-      val owner = btyOrg.getOrElse(user)
-      val bty = Client(user, key).repo(owner, repo)
       val pkg = (name in bintray).value
-      val vers = version.value
-      val creds = credentials.value
-      val btyVersion = bty.get(pkg).version(vers)
-      val BintrayCredentials(sonauser, sonapass) =
-        resolveSonatypeCredentials(creds)
-      await.result(
-        btyVersion.mavenCentralSync(sonauser, sonapass)(asStatusAndBody)) match {
-        case (200, body) =>
-          // store these sonatype credentials in memory for the remainder of the sbt session
-          Cache.putMulti(
-            ("sona.user", sonauser), ("sona.pass", sonapass))
-          log.info(s"$owner/$pkg@$vers was synced with maven central")
-          log.info(body)
-        case (404, body) =>
-          log.info(s"$owner/$pkg@$vers was not found. try publishing this package version to bintray first by typing `publish`")
-          log.info(s"body $body")
-        case (_, body) =>
-          // ensure these items are removed from the cache, they are probably bad
-          Cache.removeMulti("sona.user", "sona.pass")
-          sys.error(s"failed to sync $owner/$pkg@$vers with maven central: $body")
-        }
+      val repo = BintrayRepo(ensureCredentials.value,
+          (bintrayOrganization in bintray).value,
+          (repository in bintray).value)
+      repo.syncMavenCentral(pkg, version.value, credentials.value, sLog.value)
     }
 
   /** if credentials exist, append a user-specific resolver */
@@ -240,156 +118,36 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
   /** Lists versions of bintray packages corresponding to the current project */
   private def packageVersionsTask: Initialize[Task[Seq[String]]] =
     task {
-      val log = streams.value.log
       val credsFile = (credentialsFile in bintray).value
-      val repo = (repository in bintray).value
-      val pkgName = (name in bintray).value
-      ensuredCredentials(
-        credsFile, prompt = true).map {
-        case BintrayCredentials(user, pass) =>
-          import org.json4s._
-          val pkg = Client(user, pass).repo(user, repo).get(pkgName)
-          log.info(s"fetching package versions for package $pkgName")
-          await.result(pkg(EitherHttp({ _ => JNothing}, as.json4s.Json))).fold({ js =>
-            log.warn("package does not exist")
-            Nil
-          }, { js =>
-            for {
-              JObject(fs)                    <- js
-              ("versions", JArray(versions)) <- fs
-              JString(versionString)         <- versions
-            } yield {
-              log.info(s"- $versionString")
-              versionString
-            }
-          })
-      }.getOrElse(Nil)
+      val btyOrg = (bintrayOrganization in bintray).value
+      val repoName = (repository in bintray).value
+      val pkg = (name in bintray).value
+      (Bintray.withRepo(credsFile, btyOrg, repoName) { repo =>
+        repo.packageVersions(pkg, sLog.value)
+      }).getOrElse(Nil)
     }
 
   /** assign credentials or ask for new ones */
   private def changeCredentialsTask: Initialize[Task[Unit]] =
-    (credentialsFile in bintray).map {
-      credsFile =>
-        BintrayCredentials.read(credsFile).fold(sys.error(_), _ match {
-          case None =>
-            saveBintrayCredentials(credsFile)(requestCredentials())
-          case Some(BintrayCredentials(user, pass)) =>
-            saveBintrayCredentials(credsFile)(requestCredentials(Some(user), Some(pass)))
-        })
-    }
+    (credentialsFile in bintray).map { Bintray.changeCredentials(_) }
 
   /** log who bintry sbt thinks you are with respect to bintray api authorization */
   private def whoamiTask: Initialize[Task[String]] =
     task {
-      val log = streams.value.log
-      val creds = (credentialsFile in bintray).value
-      val is = BintrayCredentials.read(creds)
-        .fold(sys.error(_), _ match {
-          case None =>
-            "nobody"
-          case Some(BintrayCredentials(user, _)) =>
-            user
-        })
-      log.info(is)
-      is
+      Bintray.whoami((credentialsFile in bintray).value, sLog.value)
     }
 
   private def ensureCredentialsTask: Initialize[Task[BintrayCredentials]] =
     task {
-      ensuredCredentials(
+      Bintray.ensuredCredentials(
         (credentialsFile in bintray).value).get
     }
-
-  private def resolveSonatypeCredentials(
-    creds: Seq[sbt.Credentials]): BintrayCredentials =
-    Credentials.forHost(creds, BintrayCredentials.sonatype.Host)
-      .map { d => (d.userName, d.passwd) }
-      .getOrElse(requestSonatypeCredentials) match {
-        case (user, pass) => BintrayCredentials(user, pass)
-      }
 
   /** publishing to bintray requires you must have defined a license they support */
   private def ensureLicensesTask: Initialize[Task[Unit]] =
     task {
-      val omit = omitLicense.value
-      val ls = licenses.value
-      val acceptable = Licenses.Names.toSeq.sorted.mkString(", ")
-      if (!omit) {
-        if (ls.isEmpty) sys.error(
-          s"you must define at least one license for this project. Please choose one or more of\n $acceptable")
-        if (!ls.forall { case (name, _) => Licenses.Names.contains(name) }) sys.error(
-          s"One or more of the defined licenses where not among the following allowed licenses\n $acceptable")
-      }
+      Bintray.ensureLicenses(licenses.value, omitLicense.value)
     }
-
-  /** Search Sonatype credentials in the following order:
-   *  1. Cache
-   *  2. System properties
-   *  3. Environment variables
-   *  4. User input */
-  private def requestSonatypeCredentials: (String, String) = {
-    val cached = Cache.getMulti("sona.user", "sona.pass")
-    (cached("sona.user"), cached("sona.pass")) match {
-      case (Some(user), Some(pass)) =>
-        (user, pass)
-      case _ =>
-        val propsCredentials = for (name <- sys.props.get("sona.user"); pass <- sys.props.get("sona.pass")) yield (name, pass)
-        propsCredentials match {
-          case Some((name, pass)) => (name, pass)
-          case _ =>
-            val envCredentials = for (name <- sys.env.get("SONA_USER"); pass <- sys.env.get("SONA_PASS")) yield (name, pass)
-            envCredentials.getOrElse {
-              val name = Prompt("Enter sonatype username").getOrElse {
-                sys.error("sonatype username required")
-              }
-              val pass = Prompt.descretely("Enter sonatype password").getOrElse {
-                sys.error("sonatype password is required")
-              }
-              (name, pass)
-            }
-        }
-    }
-  }
-
-  // todo: generalize this for both bintray & sonatype credential prompts
-  private def requestCredentials(
-    defaultName: Option[String] = None,
-    defaultKey: Option[String] = None): (String, String) = {
-    val name = Prompt("Enter bintray username%s" format(
-      defaultName.map(" (%s)".format(_)).getOrElse(""))).orElse(defaultName).getOrElse {
-      sys.error("bintray username required")
-    }
-    val pass = Prompt.descretely("Enter bintray API key %s" format(
-      defaultKey.map(_ => "(use current)").getOrElse("(under https://bintray.com/profile/edit)")))
-        .orElse(defaultKey).getOrElse {
-          sys.error("bintray API key required")
-        }
-    (name, pass)
-  }
-
-  private def saveBintrayCredentials(to: File)(creds: (String, String)) = {
-    println(s"saving credentials to $to")
-    val (name, pass) = creds
-    BintrayCredentials.writeBintray(name, pass, to)
-    println("reload project for sbt setting `publishTo` to take effect")
-  }
-
-  /** tries to resolve bintray credentials from sbt's credentials key, then bintray's credentialsFile.
-   *  if prompt is true, we enter an interactive mode to collect them from the user */
-  private def ensuredCredentials(
-    credsFile: File, prompt: Boolean = true): Option[BintrayCredentials] =
-        BintrayCredentials.read(credsFile).fold(sys.error(_), _ match {
-          case None =>
-            if (prompt) {
-              println("bintray-sbt requires your bintray credentials.")
-              saveBintrayCredentials(credsFile)(requestCredentials())
-              ensuredCredentials(credsFile, prompt)
-            } else {
-              println(s"Missing bintray credentials $credsFile. Some bintray features depend on this.")
-              None
-            }
-          case creds => creds
-        })
 
   def bintrayPublishSettings: Seq[Setting[_]] = bintrayCommonSettings ++ Seq(
     credentialsFile in bintray in Global := Path.userHome / ".bintray" / ".credentials",
@@ -400,7 +158,7 @@ object Plugin extends sbt.Plugin with DispatchHandlers {
     publishMavenStyle := {
       if (sbtPlugin.value) false else publishMavenStyle.value
     },
-    vcsUrl in bintray := resolveVcsUrl.recover {
+    vcsUrl in bintray := Bintray.resolveVcsUrl.recover {
       case NonFatal(e) =>
         None
     }.get,
