@@ -112,9 +112,7 @@ object BintrayPlugin extends AutoPlugin {
   ) ++ Seq(
     resolvers <++= resolvers in bintray,
     credentials <++= credentials in bintray,
-    publishTo <<= publishTo in bintray,
-    // We attach this to publish configruation, so that publish-signed in pgp plugin can work.
-    publishConfiguration <<= publishConfiguration.dependsOn(bintrayEnsureBintrayPackageExists, bintrayEnsureLicenses), 
+    publishTo <<= publishTo in bintray, 
     publish := dynamicallyPublish.value
   )
 
