@@ -1,14 +1,82 @@
 package bintray
 
 import bintry.Attr
-import sbt.{ Credentials, Global, Path, Resolver, Setting, Task }
+import sbt.{ AutoPlugin, Credentials, Global, Path, Resolver, Setting, Task }
 import sbt.Def.{ Initialize, setting, task }
 import sbt.Keys._
 import sbt.Path.richFile
 import scala.util.control.NonFatal
 
-object Plugin extends sbt.Plugin {
-  import bintray.Keys._
+object BintrayPlugin extends AutoPlugin {
+  import BintrayKeys._
+
+  override def requires = sbt.plugins.JvmPlugin
+  override def trigger = allRequirements
+  override def projectSettings: Seq[Setting[_]] = bintraySettings
+  object autoImport extends BintrayKeys {
+  }
+
+  def bintraySettings: Seq[Setting[_]] =
+    bintrayCommonSettings ++ bintrayPublishSettings ++ bintrayQuerySettings
+
+  def bintrayCommonSettings: Seq[Setting[_]] = Seq(
+    changeCredentials in bintray <<= changeCredentialsTask,
+    whoami in bintray <<= whoamiTask
+  )
+
+  def bintrayQuerySettings: Seq[Setting[_]] = Seq(
+    packageVersions in bintray <<= packageVersionsTask
+  )
+
+  def bintrayPublishSettings: Seq[Setting[_]] = bintrayCommonSettings ++ Seq(
+    credentialsFile in bintray in Global := Path.userHome / ".bintray" / ".credentials",
+    name in bintray := moduleName.value,
+    bintrayOrganization in bintray in Global := { if (sbtPlugin.value) Some("sbt") else None },
+    // todo: don't force this to be sbt-plugin-releases
+    repository in bintray in Global := { if (sbtPlugin.value) "sbt-plugin-releases" else "maven" },
+    publishMavenStyle := {
+      if (sbtPlugin.value) false else publishMavenStyle.value
+    },
+    vcsUrl in bintray := Bintray.resolveVcsUrl.recover {
+      case NonFatal(e) =>
+        None
+    }.get,
+    packageLabels in bintray := Nil,
+    description in bintray <<= description,
+    // note: publishTo may not have dependencies. therefore, we can not rely well on inline overrides
+    // for inline credentials resolution we recommend defining bintrayCredentials _before_ mixing in the defaults
+    // perhaps we should try overriding something in the publishConfig setting -- https://github.com/sbt/sbt-pgp/blob/master/pgp-plugin/src/main/scala/com/typesafe/sbt/pgp/PgpSettings.scala#L124-L131
+    publishTo in bintray <<= publishToBintray,
+    resolvers in bintray <<= appendBintrayResolver,
+    credentials in bintray <<= (credentialsFile in bintray).map {
+      Credentials(_) :: Nil
+    },
+    packageAttributes in bintray <<= (sbtPlugin, sbtVersion) {
+      (plugin, sbtVersion) =>
+        if (plugin) Map(AttrNames.sbtPlugin -> Seq(Attr.Boolean(plugin)))
+        else Map.empty
+    },
+    versionAttributes in bintray <<= (crossScalaVersions, sbtPlugin, sbtVersion) {
+      (scalaVersions, plugin, sbtVersion) =>
+        val sv = Map(AttrNames.scalas -> scalaVersions.map(Attr.Version(_)))
+        if (plugin) sv ++ Map(AttrNames.sbtVersion-> Seq(Attr.Version(sbtVersion))) else sv
+    },
+    omitLicense in bintray in Global := { if (sbtPlugin.value) sbtPlugin.value else false },
+    ensureLicenses <<= ensureLicensesTask,
+    ensureCredentials <<= ensureCredentialsTask,
+    ensureBintrayPackageExists <<= ensurePackageTask,
+    publishVersionAttributes <<= publishVersionAttributesTask,
+    unpublish in bintray <<= unpublishTask.dependsOn(ensureBintrayPackageExists, ensureLicenses),
+    remoteSign in bintray <<= remoteSignTask,
+    syncMavenCentral in bintray <<= syncMavenCentralTask
+  ) ++ Seq(
+    resolvers <++= resolvers in bintray,
+    credentials <++= credentials in bintray,
+    publishTo <<= publishTo in bintray,
+    // We attach this to publish configruation, so that publish-signed in pgp plugin can work.
+    publishConfiguration <<= publishConfiguration.dependsOn(ensureBintrayPackageExists, ensureLicenses), 
+    publish <<= publishWithVersionAttrs
+  )
 
   /** publishes version meta attributes after successfully publishing artifact files. this happens _after_
    *  a successful publish action */
@@ -148,71 +216,4 @@ object Plugin extends sbt.Plugin {
     task {
       Bintray.ensureLicenses(licenses.value, omitLicense.value)
     }
-
-  def bintrayPublishSettings: Seq[Setting[_]] = bintrayCommonSettings ++ Seq(
-    credentialsFile in bintray in Global := Path.userHome / ".bintray" / ".credentials",
-    name in bintray := moduleName.value,
-    bintrayOrganization in bintray in Global := { if (sbtPlugin.value) Some("sbt") else None },
-    // todo: don't force this to be sbt-plugin-releases
-    repository in bintray in Global := { if (sbtPlugin.value) "sbt-plugin-releases" else "maven" },
-    publishMavenStyle := {
-      if (sbtPlugin.value) false else publishMavenStyle.value
-    },
-    vcsUrl in bintray := Bintray.resolveVcsUrl.recover {
-      case NonFatal(e) =>
-        None
-    }.get,
-    packageLabels in bintray := Nil,
-    description in bintray <<= description,
-    // note: publishTo may not have dependencies. therefore, we can not rely well on inline overrides
-    // for inline credentials resolution we recommend defining bintrayCredentials _before_ mixing in the defaults
-    // perhaps we should try overriding something in the publishConfig setting -- https://github.com/sbt/sbt-pgp/blob/master/pgp-plugin/src/main/scala/com/typesafe/sbt/pgp/PgpSettings.scala#L124-L131
-    publishTo in bintray <<= publishToBintray,
-    resolvers in bintray <<= appendBintrayResolver,
-    credentials in bintray <<= (credentialsFile in bintray).map {
-      Credentials(_) :: Nil
-    },
-    packageAttributes in bintray <<= (sbtPlugin, sbtVersion) {
-      (plugin, sbtVersion) =>
-        if (plugin) Map(AttrNames.sbtPlugin -> Seq(Attr.Boolean(plugin)))
-        else Map.empty
-    },
-    versionAttributes in bintray <<= (crossScalaVersions, sbtPlugin, sbtVersion) {
-      (scalaVersions, plugin, sbtVersion) =>
-        val sv = Map(AttrNames.scalas -> scalaVersions.map(Attr.Version(_)))
-        if (plugin) sv ++ Map(AttrNames.sbtVersion-> Seq(Attr.Version(sbtVersion))) else sv
-    },
-    omitLicense in bintray in Global := { if (sbtPlugin.value) sbtPlugin.value else false },
-    ensureLicenses <<= ensureLicensesTask,
-    ensureCredentials <<= ensureCredentialsTask,
-    ensureBintrayPackageExists <<= ensurePackageTask,
-    publishVersionAttributes <<= publishVersionAttributesTask,
-    unpublish in bintray <<= unpublishTask.dependsOn(ensureBintrayPackageExists, ensureLicenses),
-    remoteSign in bintray <<= remoteSignTask,
-    syncMavenCentral in bintray <<= syncMavenCentralTask
-  ) ++ Seq(
-    resolvers <++= resolvers in bintray,
-    credentials <++= credentials in bintray,
-    publishTo <<= publishTo in bintray,
-    // We attach this to publish configruation, so that publish-signed in pgp plugin can work.
-    publishConfiguration <<= publishConfiguration.dependsOn(ensureBintrayPackageExists, ensureLicenses), 
-    publish <<= publishWithVersionAttrs
-  )
-
-  def bintrayCommonSettings: Seq[Setting[_]] = Seq(
-    changeCredentials in bintray <<= changeCredentialsTask,
-    whoami in bintray <<= whoamiTask
-  )
-
-  def bintrayQuerySettings: Seq[Setting[_]] = Seq(
-    packageVersions in bintray <<= packageVersionsTask
-  )
-
-  @deprecated("use resolvers += sbt.Resolver.jcenterRepo instead. (available in sbt 0.13.6+)", since="0.2.0")
-  def bintrayResolverSettings: Seq[Setting[_]] = Seq(
-    resolvers += Opts.resolver.jcenter
-  )
-
-  def bintraySettings: Seq[Setting[_]] =
-    bintrayCommonSettings ++ bintrayResolverSettings ++ bintrayPublishSettings ++ bintrayQuerySettings
 }

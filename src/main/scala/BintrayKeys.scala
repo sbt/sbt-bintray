@@ -2,7 +2,7 @@ package bintray
 
 import sbt._
 
-object Keys {
+trait BintrayKeys {
   val bintray = TaskKey[String](
     "bintray", "bintray-sbt is an interface for the bintray package service")
 
@@ -68,3 +68,5 @@ object Keys {
     val sbtVersion = "sbt-version"
   }
 }
+
+object BintrayKeys extends BintrayKeys {}

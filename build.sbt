@@ -2,7 +2,7 @@ lazy val root = (project in file(".")).
   settings(
     organization := "me.lessis",
     name := "bintray-sbt",
-    version := "0.2.1",
+    version := "0.3.0-SNAPSHOT",
     description := "package publisher for bintray.com",
     homepage := Some(url(s"https://github.com/softprops/${name.value}#readme")),
     sbtPlugin := true,
