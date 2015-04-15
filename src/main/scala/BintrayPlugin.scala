@@ -37,7 +37,7 @@ object BintrayPlugin extends AutoPlugin {
 
   def globalPublishSettings: Seq[Setting[_]] = Seq(
     bintrayCredentialsFile in Global := Path.userHome / ".bintray" / ".credentials",
-    bintrayOrganization in Global := { if (sbtPlugin.value) Some("sbt") else None }
+    bintrayOrganization in Global := None
   )
 
   def bintrayPublishSettings: Seq[Setting[_]] = bintrayCommonSettings ++ Seq(
@@ -46,7 +46,10 @@ object BintrayPlugin extends AutoPlugin {
       bintrayOrganization.value,
       bintrayRepository.value),
     // todo: don't force this to be sbt-plugin-releases
-    bintrayRepository := { if (sbtPlugin.value) "sbt-plugin-releases" else "maven" },
+    bintrayRepository := {
+      if (sbtPlugin.value) Bintray.defaultSbtPluginRepository
+      else Bintray.defaultMavenRepository
+    },
     publishMavenStyle := {
       if (sbtPlugin.value) false else publishMavenStyle.value
     },
@@ -110,7 +113,6 @@ object BintrayPlugin extends AutoPlugin {
    *  a successful publish action */
   private def publishWithVersionAttrs: Initialize[Task[Unit]] =
     (publish, bintrayPublishVersionAttributes)(_ && _)
-
 
   private def publishVersionAttributesTask: Initialize[Task[Unit]] =
     task {

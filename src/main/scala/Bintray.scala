@@ -5,6 +5,10 @@ import bintry.Licenses
 import scala.util.Try
 
 object Bintray {
+  val defaultMavenRepository = "maven"
+  // http://www.scala-sbt.org/0.13/docs/Bintray-For-Plugins.html
+  val defaultSbtPluginRepository = "sbt-plugins"
+
   def whoami(credsFile: File, log: Logger): String =
     {
       val is = BintrayCredentials.read(credsFile)
