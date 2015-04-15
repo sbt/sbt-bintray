@@ -162,7 +162,7 @@ object BintrayPlugin extends AutoPlugin {
       val btyOrg = bintrayOrganization.value
       val repoName = bintrayRepository.value
       // ensure that we have credentials to build a resolver that can publish to bintray
-      Bintray.withRepo(credsFile, btyOrg, repoName) { repo =>
+      Bintray.withRepo(credsFile, btyOrg, repoName, prompt = false) { repo =>
         repo.buildPublishResolver(bintrayPackage.value,
           version.value,
           publishMavenStyle.value,
@@ -170,7 +170,7 @@ object BintrayPlugin extends AutoPlugin {
           bintrayReleaseOnPublish.value)
       }
     }
-  
+
   /** Lists versions of bintray packages corresponding to the current project */
   private def packageVersionsTask: Initialize[Task[Seq[String]]] =
     task {
