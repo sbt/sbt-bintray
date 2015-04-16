@@ -1,7 +1,7 @@
 package bintray
 
 import bintry.Attr
-import sbt.{ AutoPlugin, Credentials, Global, Path, Resolver, Setting, Task }
+import sbt.{ AutoPlugin, Credentials, Global, Path, Resolver, Setting, Task, Tags, ThisBuild }
 import sbt.Def.{ Initialize, setting, task, taskDyn }
 import sbt.Keys._
 import sbt.Path.richFile
@@ -14,10 +14,13 @@ object BintrayPlugin extends AutoPlugin {
   override def trigger = allRequirements
   
   override def globalSettings: Seq[Setting[_]] = globalPublishSettings
+  override def buildSettings: Seq[Setting[_]] = buildPublishSettings
   override def projectSettings: Seq[Setting[_]] = bintraySettings
 
   object autoImport extends BintrayKeys {
   }
+
+  lazy val Git = Tags.Tag("git")
 
   def bintraySettings: Seq[Setting[_]] =
     bintrayCommonSettings ++ bintrayPublishSettings ++ bintrayQuerySettings
@@ -37,11 +40,16 @@ object BintrayPlugin extends AutoPlugin {
 
   def globalPublishSettings: Seq[Setting[_]] = Seq(
     bintrayCredentialsFile in Global := Path.userHome / ".bintray" / ".credentials",
-    bintrayOrganization in Global := None
+    concurrentRestrictions in Global += Tags.exclusive(Git)
+  )
+
+  def buildPublishSettings: Seq[Setting[_]] = Seq(
+    bintrayOrganization in ThisBuild := None,
+    bintrayVcsUrl in ThisBuild := vcsUrlTask.value,
+    bintrayReleaseOnPublish in ThisBuild := false
   )
 
   def bintrayPublishSettings: Seq[Setting[_]] = bintrayCommonSettings ++ Seq(
-    bintrayReleaseOnPublish := false,
     bintrayPackage := moduleName.value,
     bintrayRepo := BintrayRepo(bintrayEnsureCredentials.value,
       bintrayOrganization.value,
@@ -54,7 +62,6 @@ object BintrayPlugin extends AutoPlugin {
     publishMavenStyle := {
       if (sbtPlugin.value) false else publishMavenStyle.value
     },
-    bintrayVcsUrl := Bintray.resolveVcsUrl.recover { case _ => None }.get,
     bintrayPackageLabels := Nil,
     description in bintray <<= description,
     // note: publishTo may not have dependencies. therefore, we can not rely well on inline overrides
@@ -116,6 +123,11 @@ object BintrayPlugin extends AutoPlugin {
     publish := dynamicallyPublish.value
   )
 
+  private def vcsUrlTask: Initialize[Task[Option[String]]] =
+    task {
+      Bintray.resolveVcsUrl.recover { case _ => None }.get
+    } tag(Git)
+
   private def dynamicallyPublish: Initialize[Task[Unit]] =
     taskDyn {
       val _ = publish.value
@@ -142,7 +154,7 @@ object BintrayPlugin extends AutoPlugin {
   private def ensurePackageTask: Initialize[Task[Unit]] =
     task {
       val vcs = bintrayVcsUrl.value.getOrElse {
-        sys.error("""vcsUrl not defined. assign this with (vcsUrl in bintray) := Some("git@github.com:you/your-repo.git")""")
+        sys.error("""bintrayVcsUrl not defined. assign this with bintrayVcsUrl := Some("git@github.com:you/your-repo.git")""")
       }
       val repo = bintrayRepo.value
       repo.ensurePackage(bintrayPackage.value,

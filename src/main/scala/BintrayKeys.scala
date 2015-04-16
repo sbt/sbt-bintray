@@ -62,7 +62,7 @@ trait BintrayKeys {
   val bintraySyncMavenCentral = taskKey[Unit](
     "Sync bintray-published artifacts with maven central")
 
-  val bintrayVcsUrl = settingKey[Option[String]](
+  val bintrayVcsUrl = taskKey[Option[String]](
     "Cannonical url for hosted version control repository")
 
   /** named used for common package attributes lifted from sbt
