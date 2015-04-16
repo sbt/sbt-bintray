@@ -39,7 +39,7 @@ object Bintray {
         if (licenses.isEmpty) sys.error(
           s"you must define at least one license for this project. Please choose one or more of\n $acceptable")
         if (!licenses.forall { case (name, _) => Licenses.Names.contains(name) }) sys.error(
-          s"One or more of the defined licenses where not among the following allowed licenses\n $acceptable")
+          s"One or more of the defined licenses were not among the following allowed licenses\n $acceptable")
       }
     }
 
