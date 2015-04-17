@@ -3,15 +3,19 @@ package bintray
 import sbt._
 import Bintray._
 import bintry.{ Attr, Client, Licenses }
+import dispatch.Http
 
 case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repoName: String) extends DispatchHandlers {
   import scala.concurrent.ExecutionContext.Implicits.global
   import dispatch.as
 
+  val http: Http = new Http()
   lazy val BintrayCredentials(user, key) = credential
-  def client: Client = Client(user, key)
-  def repo: Client#Repo = client.repo(org.getOrElse(user), repoName)
+  lazy val client: Client = Client(user, key, http)
+  lazy val repo: Client#Repo = client.repo(org.getOrElse(user), repoName)
   def owner = org.getOrElse(user)
+
+  def close(): Unit = http.shutdown()
 
   /** updates a package version with the values defined in versionAttributes in bintray */
   def publishVersionAttributes(packageName: String, vers: String, attributes: AttrMap): Unit =
@@ -25,22 +29,21 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
   def ensurePackage(packageName: String, attributes: AttrMap,
     desc: String, vcs: String, lics: Seq[(String, URL)], labels: Seq[String]): Unit =
     {
-      val bty = repo
       val exists =
-        if (await.result(bty.get(packageName)(asFound))) {
+        if (await.result(repo.get(packageName)(asFound))) {
           // update existing attrs
-          if (!attributes.isEmpty) await.ready(bty.get(packageName).attrs.update(attributes.toList:_*)())
+          if (!attributes.isEmpty) await.ready(repo.get(packageName).attrs.update(attributes.toList:_*)())
           true
         } else {
           val created = await.result(
-            bty.createPackage(packageName)
+            repo.createPackage(packageName)
               .desc(desc)
               .vcs(vcs)
               .licenses(lics.map { case (name, _) => name }:_*)
               .labels(labels:_*)(asCreated))
           // assign attrs
           if (created && !attributes.isEmpty) await.ready(
-            bty.get(packageName).attrs.set(attributes.toList:_*)())
+            repo.get(packageName).attrs.set(attributes.toList:_*)())
           created
         }
       if (!exists) sys.error(
@@ -50,14 +53,13 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
   def buildPublishResolver(packageName: String, vers: String, mvnStyle: Boolean,
     isSbtPlugin: Boolean, isRelease: Boolean): Resolver =
     {
-      val bty = repo
-      val pkg = bty.get(packageName)
+      val pkg = repo.get(packageName)
       // warn the user that bintray expects maven published artifacts to be published to the `maven` repo
       // but they have explicitly opted into a publish style and/or repo that
       // deviates from that expecation
       if (Bintray.defaultMavenRepository == repo && !mvnStyle) println(
         "you have opted to publish to a repository named 'maven' but publishMavenStyle is assigned to false. This may result in unexpected behavior")
-      Bintray.publishTo(bty, pkg, vers, mvnStyle, isSbtPlugin, isRelease)
+      Bintray.publishTo(repo, pkg, vers, mvnStyle, isSbtPlugin, isRelease)
     }
 
   def release(packageName: String, vers: String, log: Logger): Unit =
@@ -80,8 +82,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
    */
   def remoteSign(packageName: String, vers: String, log: Logger): Unit =
     {
-      val bty = repo
-      val btyVersion = bty.get(packageName).version(vers)
+      val btyVersion = repo.get(packageName).version(vers)
       val passphrase = Cache.get("pgp.pass").orElse(Prompt.descretely("Enter pgp passphrase"))
         .getOrElse {
           sys.error("pgp passphrase is required")
@@ -112,8 +113,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
    *  this can be quiet a convenient feature */
   def syncMavenCentral(packageName: String, vers: String, creds: Seq[Credentials], log: Logger): Unit =
     {
-      val bty = repo
-      val btyVersion = bty.get(packageName).version(vers)
+      val btyVersion = repo.get(packageName).version(vers)
       val BintrayCredentials(sonauser, sonapass) =
         resolveSonatypeCredentials(creds)
       await.result(

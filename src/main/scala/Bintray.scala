@@ -3,6 +3,7 @@ package bintray
 import sbt._
 import bintry.{ Licenses, Client }
 import scala.util.Try
+import scala.collection.concurrent.TrieMap
 
 object Bintray {
   val defaultMavenRepository = "maven"
@@ -46,8 +47,13 @@ object Bintray {
   def withRepo[A](credsFile: File, org: Option[String], repoName: String, prompt: Boolean = true)
     (f: BintrayRepo => A): Option[A] =
     ensuredCredentials(credsFile, prompt) map { cred =>
-      f(BintrayRepo(cred, org, repoName))
+      val repo = cachedRepo(cred, org, repoName)
+      f(repo)
     }
+
+  private val repoCache: TrieMap[(BintrayCredentials, Option[String], String), BintrayRepo] = TrieMap()
+  def cachedRepo(credential: BintrayCredentials, org: Option[String], repoName: String): BintrayRepo =
+    repoCache.getOrElseUpdate((credential, org, repoName), BintrayRepo(credential, org, repoName))
 
   private[bintray] def ensuredCredentials(
     credsFile: File, prompt: Boolean = true): Option[BintrayCredentials] =

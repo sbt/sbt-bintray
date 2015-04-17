@@ -51,7 +51,7 @@ object BintrayPlugin extends AutoPlugin {
 
   def bintrayPublishSettings: Seq[Setting[_]] = bintrayCommonSettings ++ Seq(
     bintrayPackage := moduleName.value,
-    bintrayRepo := BintrayRepo(bintrayEnsureCredentials.value,
+    bintrayRepo := Bintray.cachedRepo(bintrayEnsureCredentials.value,
       bintrayOrganization.value,
       bintrayRepository.value),
     // todo: don't force this to be sbt-plugin-releases
