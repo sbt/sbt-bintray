@@ -62,6 +62,12 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
       Bintray.publishTo(repo, pkg, vers, mvnStyle, isSbtPlugin, isRelease)
     }
 
+  def upload(packageName: String, vers: String, path: String, f: File, log: Logger): Unit =
+    await.result(repo.get(packageName).version(vers).upload(path, f)(asStatusAndBody)) match {
+      case (201, _) => log.info(s"$f was uploaded to $owner/$packageName@$vers")
+      case (_, fail) => sys.error(s"failed to upload $f to $owner/$packageName@$vers: $fail")
+    }
+
   def release(packageName: String, vers: String, log: Logger): Unit =
     await.result(repo.get(packageName).version(vers).publish(asStatusAndBody)) match {
       case (200, _) => log.info(s"$owner/$packageName@$vers was released")
