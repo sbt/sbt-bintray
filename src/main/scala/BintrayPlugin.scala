@@ -46,7 +46,7 @@ object BintrayPlugin extends AutoPlugin {
   def buildPublishSettings: Seq[Setting[_]] = Seq(
     bintrayOrganization in ThisBuild := None,
     bintrayVcsUrl in ThisBuild := vcsUrlTask.value,
-    bintrayReleaseOnPublish in ThisBuild := false
+    bintrayReleaseOnPublish in ThisBuild := true
   )
 
   def bintrayPublishSettings: Seq[Setting[_]] = bintrayCommonSettings ++ Seq(
