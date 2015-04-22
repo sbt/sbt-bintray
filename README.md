@@ -51,10 +51,7 @@ resolvers += Resolver.bintrayRepo("otherUser", "maven")
 
 To publish a package to bintray, you need a bintray account. You can do so [here](https://bintray.com/signup/index). 
 `BintrayPlugin` is an auto plugin that will be added to all projects in your build.
-There are two steps to publish a "version" of a bintray package:
-
-1. First, stage all artifacts using `publish`.
-2. Once all artifacts are staged, run `bintrayRelease` to make the artifacts public
+This plugin will upload and release your artifacts into bintray when you run `publish`.
 
 If you try to publish at this point, you will be prompted for your bintray username and api key. This will generate an sbt credentials
 file under `~/.bintray/.credentials` used to authenticate publishing requests to bintray.
@@ -75,6 +72,19 @@ in your project's build definition.
 ```scala
 bintrayOrganization := Some("strength-in-numbers")
 ```
+
+##### Staging (optional)
+
+If you want to stage your all artifacts first, put this in your settings:
+
+```scala
+bintrayReleaseOnPublish in ThisBuild := false
+```
+
+This will break the process into two parts:
+
+1. First, stage all artifacts using `publish`.
+2. Once all artifacts are staged, run `bintrayRelease` to make the artifacts public
 
 #### Licenses
 
