@@ -1,6 +1,6 @@
 organization := "me.lessis"
 name := "bintray-sbt"
-version := "0.3.0-SNAPSHOT"
+version := "0.3.0"
 description := "package publisher for bintray.com"
 homepage := Some(url(s"https://github.com/softprops/${name.value}#readme"))
 sbtPlugin := true
@@ -26,5 +26,6 @@ pomExtra := (
   </developers>
 )
 lsSettings
-externalResolvers in LsKeys.lsync := (resolvers in bintray.Keys.bintray).value
-bintraySettings
+externalResolvers in LsKeys.lsync := (resolvers in bintray).value
+bintrayRepository := "sbt-plugin-releases"
+bintrayOrganization := Some("sbt")
