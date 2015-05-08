@@ -128,8 +128,13 @@ object BintrayPlugin extends AutoPlugin {
       Bintray.resolveVcsUrl.recover { case _ => None }.get
     } tag(Git)
 
+  // uses taskDyn because it can return one of two potential tasks
+  // as its result, each with their own dependencies
+  // see also: http://www.scala-sbt.org/0.13/docs/Tasks.html#Dynamic+Computations+with 
   private def dynamicallyPublish: Initialize[Task[Unit]] =
     taskDyn {
+      val ep = bintrayEnsureBintrayPackageExists.value
+      val el = bintrayEnsureLicenses.value
       val _ = publish.value
       val isRelease = bintrayReleaseOnPublish.value
       if (isRelease) bintrayRelease
