@@ -66,7 +66,7 @@ At any time you can check who you will be authenticated as with the `bintrayWhoa
 
     > bintrayWhoami
 
-You may optionally wish to publish to a bintray organization instead of your bintray user account. To do so, use the `bintrayOrganization` settting
+You may optionally wish to publish to a bintray organization instead of your bintray user account. To do so, use the `bintrayOrganization` setting
 in your project's build definition.
 
 ```scala
@@ -130,7 +130,7 @@ _NOTE_ This interface will likely change in the future. All changes will be anno
 ##### Other pieces of flair
 
 When publishing for the first time, bintray sbt will create a package for you under your bintray account's "maven" repository
-with using your project's (module)name as the package name and description for your package description.
+with your project's (module)name as the package name and description for your package description.
 
 ### Unpublishing
 
