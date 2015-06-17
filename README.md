@@ -130,7 +130,7 @@ _NOTE_ This interface will likely change in the future. All changes will be anno
 ##### Other pieces of flair
 
 When publishing for the first time, bintray sbt will create a package for you under your bintray account's "maven" repository
-with using your project's (module)name as the package name and description for your package description.
+with your project's (module)name as the package name and description for your package description.
 
 ### Unpublishing
 
