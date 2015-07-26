@@ -32,6 +32,9 @@ trait BintrayKeys {
   val bintrayCredentialsFile = settingKey[File](
     "File containing bintray api credentials")
 
+  val bintrayCredentials = settingKey[Option[BintrayCredentials]](
+    "Bintray api credentials")
+
   val bintrayPackageVersions = taskKey[Seq[String]](
     "List bintray versions for the current package")
 

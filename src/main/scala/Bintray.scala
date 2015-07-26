@@ -20,15 +20,14 @@ object Bintray {
                          pkg.version(version),
                          sbt.Resolver.ivyStylePatterns.artifactPatterns, release))
 
-  def whoami(credsFile: File, log: Logger): String =
+  def whoami(creds: Option[BintrayCredentials], log: Logger): String =
     {
-      val is = BintrayCredentials.read(credsFile)
-        .fold(sys.error(_), _ match {
-          case None =>
-            "nobody"
-          case Some(BintrayCredentials(user, _)) =>
-            user
-        })
+      val is = creds match {
+        case None =>
+          "nobody"
+        case Some(BintrayCredentials(user, _)) =>
+          user
+      }
       log.info(is)
       is
     }
@@ -44,9 +43,9 @@ object Bintray {
       }
     }
 
-  def withRepo[A](credsFile: File, org: Option[String], repoName: String, prompt: Boolean = true)
+  def withRepo[A](credsFile: File, creds: Option[BintrayCredentials], org: Option[String], repoName: String, prompt: Boolean = true)
     (f: BintrayRepo => A): Option[A] =
-    ensuredCredentials(credsFile, prompt) map { cred =>
+    ensuredCredentials(credsFile, creds, prompt) map { cred =>
       val repo = cachedRepo(cred, org, repoName)
       f(repo)
     }
@@ -56,37 +55,34 @@ object Bintray {
     repoCache.getOrElseUpdate((credential, org, repoName), BintrayRepo(credential, org, repoName))
 
   private[bintray] def ensuredCredentials(
-    credsFile: File, prompt: Boolean = true): Option[BintrayCredentials] =
-    BintrayCredentials.read(credsFile).fold(sys.error(_), _ match {
+    credsFile: File, creds: Option[BintrayCredentials], prompt: Boolean = true): Option[BintrayCredentials] =
+    creds match {
       case None =>
         if (prompt) {
           println("bintray-sbt requires your bintray credentials.")
           saveBintrayCredentials(credsFile)(requestCredentials())
-          ensuredCredentials(credsFile, prompt)
+          ensuredCredentials(credsFile, creds, prompt)
         } else {
-          println(s"Missing bintray credentials $credsFile. Some bintray features depend on this.")
+          println(s"No bintray credentials provided in environment, parameters or $credsFile.")
+          println("Some bintray features depend on this.")
           None
         }
       case creds => creds
-    })
+    }
 
   /** assign credentials or ask for new ones */
-  private[bintray] def changeCredentials(credsFile: File): Unit =
-    BintrayCredentials.read(credsFile).fold(sys.error(_), _ match {
+  private[bintray] def changeCredentials(credsFile: File, creds: Option[BintrayCredentials]): Unit =
+    creds match {
       case None =>
         saveBintrayCredentials(credsFile)(requestCredentials())
       case Some(BintrayCredentials(user, pass)) =>
         saveBintrayCredentials(credsFile)(requestCredentials(Some(user), Some(pass)))
-    })    
+    }
 
-  private[bintray] def buildResolvers(credsFile: File, org: Option[String], repoName: String): Seq[Resolver] =
-    BintrayCredentials.read(credsFile).fold({ err =>
-      println(s"bintray credentials $err is malformed")
-      Nil
-    }, {
-      _.map { case BintrayCredentials(user, _) => Seq(Resolver.bintrayRepo(org.getOrElse(user), repoName)) }
-      .getOrElse(Nil)
-    })
+  private[bintray] def buildResolvers(creds: Option[BintrayCredentials], org: Option[String], repoName: String): Seq[Resolver] =
+    creds.fold(Seq.empty[Resolver]) {
+      case BintrayCredentials(user, _) => Seq(Resolver.bintrayRepo(org.getOrElse(user), repoName))
+    }
 
   private def saveBintrayCredentials(to: File)(creds: (String, String)) = {
     println(s"saving credentials to $to")
@@ -135,5 +131,5 @@ object Bintray {
         .find { case (name, _) => "origin" == name }
         .orElse(pushes.headOption)
         .map { case (_, url) => url }
-    }  
+    }
 }
