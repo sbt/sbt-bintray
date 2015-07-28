@@ -2,6 +2,7 @@ package bintray
 
 import bintry.Attr
 import sbt.{ AutoPlugin, Credentials, Global, Path, Resolver, Setting, Task, Tags, ThisBuild }
+import sbt.Classpaths.publishTask
 import sbt.Def.{ Initialize, setting, task, taskDyn }
 import sbt.Keys._
 import sbt.Path.richFile
@@ -133,13 +134,8 @@ object BintrayPlugin extends AutoPlugin {
   // see also: http://www.scala-sbt.org/0.13/docs/Tasks.html#Dynamic+Computations+with 
   private def dynamicallyPublish: Initialize[Task[Unit]] =
     taskDyn {
-      val ep = bintrayEnsureBintrayPackageExists.value
-      val el = bintrayEnsureLicenses.value
-      val _ = publish.value
-      val isRelease = bintrayReleaseOnPublish.value
-      if (isRelease) bintrayRelease
-      else warnToRelease
-    }
+      (if (bintrayReleaseOnPublish.value) bintrayRelease else warnToRelease).dependsOn(publishTask(publishConfiguration, deliver))
+    } dependsOn(bintrayEnsureBintrayPackageExists, bintrayEnsureLicenses)
 
   private def warnToRelease: Initialize[Task[Unit]] =
     task {
