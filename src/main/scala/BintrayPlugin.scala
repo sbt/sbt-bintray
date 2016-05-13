@@ -4,8 +4,7 @@ import bintry.Attr
 import sbt.{ AutoPlugin, Credentials, Global, Path, Resolver, Setting, Task, Tags, ThisBuild }
 import sbt.Classpaths.publishTask
 import sbt.Def.{ Initialize, setting, task, taskDyn }
-import sbt.Keys._
-import sbt.Path.richFile
+import sbt._, Keys._, syntax._
 
 object BintrayPlugin extends AutoPlugin {
   import BintrayKeys._

@@ -122,7 +122,7 @@ object Bintray {
   def resolveVcsUrl: Try[Option[String]] =
     Try {
       val pushes =
-        sbt.Process("git" :: "remote" :: "-v" :: Nil).!!.split("\n")
+        sys.process.Process("git" :: "remote" :: "-v" :: Nil).!!.split("\n")
          .map {
            _.split("""\s+""") match {
              case Array(name, url, "(push)") =>

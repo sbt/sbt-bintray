@@ -25,7 +25,7 @@ pomExtra := (
     </developer>
   </developers>
 )
-lsSettings
-externalResolvers in LsKeys.lsync := (resolvers in bintray).value
-bintrayRepository := "sbt-plugin-releases"
-bintrayOrganization := Some("sbt")
+// lsSettings
+// externalResolvers in LsKeys.lsync := (resolvers in bintray).value
+// bintrayRepository := "sbt-plugin-releases"
+// bintrayOrganization := Some("sbt")

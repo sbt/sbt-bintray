@@ -1,6 +1,6 @@
 package bintray
 
-import sbt._
+import sbt._, Keys._, syntax._
 
 trait BintrayKeys {
   val bintray = taskKey[String]("bintray-sbt is an interface for the bintray package service")
