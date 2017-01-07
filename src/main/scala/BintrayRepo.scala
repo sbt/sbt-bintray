@@ -3,6 +3,7 @@ package bintray
 import sbt._
 import Bintray._
 import bintry.{ Attr, Client, Licenses }
+import bintray.BintrayCredentials._
 import dispatch.Http
 
 case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repoName: String) extends DispatchHandlers {
@@ -153,29 +154,12 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
    *  2. System properties
    *  3. Environment variables
    *  4. User input */
-  private def requestSonatypeCredentials: (String, String) = {
-    val cached = Cache.getMulti("sona.user", "sona.pass")
-    (cached("sona.user"), cached("sona.pass")) match {
-      case (Some(user), Some(pass)) =>
-        (user, pass)
-      case _ =>
-        val propsCredentials = for (name <- sys.props.get("sona.user"); pass <- sys.props.get("sona.pass")) yield (name, pass)
-        propsCredentials match {
-          case Some((name, pass)) => (name, pass)
-          case _ =>
-            val envCredentials = for (name <- sys.env.get("SONA_USER"); pass <- sys.env.get("SONA_PASS")) yield (name, pass)
-            envCredentials.getOrElse {
-              val name = Prompt("Enter sonatype username").getOrElse {
-                sys.error("sonatype username required")
-              }
-              val pass = Prompt.descretely("Enter sonatype password").getOrElse {
-                sys.error("sonatype password is required")
-              }
-              (name, pass)
-            }
-        }
-    }
-  }
+  private def requestSonatypeCredentials: (String, String) =
+    cachedCredentials("sonatype")
+      .orElse(propsCredentials("sonatype"))
+      .orElse(envCredentials("sonatype"))
+      .orElse(promptCredentials("sonatype"))
+      .getOrElse(sys.error("sonatype credentials required"))
 
   /** Lists versions of bintray packages corresponding to the current project */
   def packageVersions(packageName: String, log: Logger): Seq[String] =

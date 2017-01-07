@@ -34,7 +34,7 @@ object BintrayCredentials {
     val template = templateSrc(Realm, Host)_
   }
 
-  def read(path: File): Either[String,Option[BintrayCredentials]] =
+  def fileCredentials(path: File) =
     path match {
       case creds if creds.exists =>
         import collection.JavaConversions._
@@ -44,13 +44,39 @@ object BintrayCredentials {
           case (k,v) => (k.toString, v.toString.trim)
         }.toMap
         val missing = Keys.filter(!mapped.contains(_))
-        if (!missing.isEmpty) Left(
-          "missing credential properties %s in %s"
-            .format(missing.mkString(", "), creds))
-        else Right(Some(BintrayCredentials(
-          mapped("user"), mapped("password"))))
-      case _ => Right(None)
+        if (!missing.isEmpty) None
+        else Some(mapped("user"), mapped("password"))
+      case _ => None
     }
+
+  def cachedCredentials(key: String) = {
+    val cached = Cache.getMulti(s"$key.user", s"$key.pass")
+    (cached(s"$key.user"), cached(s"$key.pass")) match {
+      case (Some(user), Some(pass)) => Some((user, pass))
+      case _ => None
+    }
+  }
+
+  def propsCredentials(key: String) = {
+    for {
+      name <- sys.props.get(s"$key.user")
+      pass <- sys.props.get(s"$key.pass")
+    } yield (name, pass)
+  }
+
+  def envCredentials(key: String) = {
+    for {
+      name <- sys.env.get(s"${key.toUpperCase}_USER")
+      pass <- sys.env.get(s"${key.toUpperCase}_PASS")
+    } yield (name, pass)
+  }
+
+  def promptCredentials(key: String) = {
+    for {
+      name <- Prompt(s"Enter $key username")
+      pass <- Prompt.descretely(s"Enter $key password")
+    } yield (name, pass)
+  }
 
   def writeBintray(
     user: String, password: String, path: File) =

@@ -2,9 +2,9 @@
 
 An sbt interface for publishing and resolving [bintray](https://bintray.com) packages.
 
-## install
+## Install
 
-### what you need
+### What you need
 
 - an account on [bintray](https://bintray.com) (get one [here](https://bintray.com/signup/index))
 - a desire to build a more diverse Scala library ecosystem
@@ -25,7 +25,7 @@ Be sure to use the [latest launcher](http://www.scala-sbt.org/download.html)
 
 ## Resolving bintray artifacts
 
-Using sbt 0.13.6+, you don't need this plugin to resolve bintray-hosted dependencies.
+Add the following to your build file:
 
 ```scala
 resolvers += Resolver.jcenterRepo
@@ -49,18 +49,20 @@ resolvers += Resolver.bintrayRepo("otherUser", "maven")
 
 ### Publishing
 
-To publish a package to bintray, you need a bintray account. You can do so [here](https://bintray.com/signup/index). 
+To publish a package to bintray, you need a bintray account. You can create one [here](https://bintray.com/signup/index).
 `BintrayPlugin` is an auto plugin that will be added to all projects in your build.
 This plugin will upload and release your artifacts into bintray when you run `publish`.
 
 If you try to publish at this point, you will be prompted for your bintray username and api key. This will generate an sbt credentials
 file under `~/.bintray/.credentials` used to authenticate publishing requests to bintray.
 
-You can interactively change to bintray credentials used by sbt anytime with
+You can interactively change bintray credentials stored in the credentials file with
 
     > bintrayChangeCredentials
 
-Note you will need to reload your project afterwards which will reset your `publishTo` setting.
+Note that you will need to reload your project afterwards which will reset your `publishTo` setting.
+
+You may provide bintray credentials via environment variables (`BINTRAY_USER` and `BINTRAY_PASS`) or via system properties (`-Dbintray.user=...` and `-Dbintray.pass=...`) as well.
 
 At any time you can check who you will be authenticated as with the `bintrayWhoami` setting which will print your bintray username
 
@@ -116,7 +118,7 @@ bintrayPackageLabels := Seq("hipster", "keen")
 
 #### Metadata
 
-In addition to labels, you can also assign metadata attributes that expose information to package tooling. These can be assigned at the package and the version levels. By default, this plugin assigns a flag indicating "this is an sbt plugin" to the package and the scala version and optionally sbt version to the package version. You can assign these with the `packageAttributes in bintray` and `versionAttributes in bintray` setting keys. These values must be typed and conform to the [types](https://github.com/softprops/bintry#metadata) bintray [exposes](https://bintray.com/docs/api/#_attributes).
+In addition to labels, you can also assign metadata attributes that expose information to package tooling. These can be assigned at the package and the version levels. By default, this plugin assigns a flag indicating "this is an sbt plugin" to the package and the scala version and optionally sbt version to the package version. You can assign these with the `bintrayPackageAttributes` and `bintrayVersionAttributes` setting keys. These values must be typed and conform to the [types](https://github.com/softprops/bintry#metadata) bintray [exposes](https://bintray.com/docs/api/#_attributes).
 
 ```scala
 // append custom package attributes
