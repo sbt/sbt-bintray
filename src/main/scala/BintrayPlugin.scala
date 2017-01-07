@@ -36,7 +36,7 @@ object BintrayPlugin extends AutoPlugin {
   )
 
   def bintrayQuerySettings: Seq[Setting[_]] = Seq(
-    bintrayPackageVersions <<= packageVersionsTask
+    bintrayPackageVersions := packageVersionsTask.value
   )
 
   def globalPublishSettings: Seq[Setting[_]] = Seq(
@@ -64,11 +64,11 @@ object BintrayPlugin extends AutoPlugin {
       if (sbtPlugin.value) false else publishMavenStyle.value
     },
     bintrayPackageLabels := Nil,
-    description in bintray <<= description,
+    description in bintray := description.value,
     // note: publishTo may not have dependencies. therefore, we can not rely well on inline overrides
     // for inline credentials resolution we recommend defining bintrayCredentials _before_ mixing in the defaults
     // perhaps we should try overriding something in the publishConfig setting -- https://github.com/sbt/sbt-pgp/blob/master/pgp-plugin/src/main/scala/com/typesafe/sbt/pgp/PgpSettings.scala#L124-L131
-    publishTo in bintray <<= publishToBintray,
+    publishTo in bintray := publishToBintray.value,
     resolvers in bintray := {
       Bintray.buildResolvers(bintrayCredentialsFile.value,
         bintrayOrganization.value,
@@ -97,7 +97,7 @@ object BintrayPlugin extends AutoPlugin {
     bintrayEnsureCredentials := {
       Bintray.ensuredCredentials(bintrayCredentialsFile.value).get
     },
-    bintrayEnsureBintrayPackageExists <<= ensurePackageTask,
+    bintrayEnsureBintrayPackageExists := ensurePackageTask.value,
     bintrayUnpublish := {
       val e1 = bintrayEnsureBintrayPackageExists
       val e2 = bintrayEnsureLicenses
@@ -118,9 +118,9 @@ object BintrayPlugin extends AutoPlugin {
       repo.release(bintrayPackage.value, version.value, sLog.value)
     }
   ) ++ Seq(
-    resolvers <++= resolvers in bintray,
-    credentials <++= credentials in bintray,
-    publishTo <<= publishTo in bintray, 
+    resolvers ++= (resolvers in bintray).value,
+    credentials ++= (credentials in bintray).value,
+    publishTo := (publishTo in bintray).value,
     publish := dynamicallyPublish.value
   )
 
