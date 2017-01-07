@@ -1,10 +1,10 @@
-resolvers += Resolver.url(
-  "bintray-sbt-plugin-releases",
-    url("http://dl.bintray.com/content/sbt/sbt-plugin-releases"))(
-        Resolver.ivyStylePatterns)
+// resolvers += Resolver.url(
+//   "bintray-sbt-plugin-releases",
+//     url("http://dl.bintray.com/content/sbt/sbt-plugin-releases"))(
+//         Resolver.ivyStylePatterns)
 
-addSbtPlugin("me.lessis" % "ls-sbt" % "0.1.3")
+// addSbtPlugin("me.lessis" % "ls-sbt" % "0.1.3")
 
-addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0-SNAPSHOT")
+// addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0-SNAPSHOT")
 
-resolvers += Resolver.sonatypeRepo("snapshots")
+// resolvers += Resolver.sonatypeRepo("snapshots")
