@@ -51,7 +51,15 @@ resolvers += Resolver.bintrayRepo("otherUser", "maven")
 
 To publish a package to bintray, you need a bintray account. You can do so [here](https://bintray.com/signup/index). 
 `BintrayPlugin` is an auto plugin that will be added to all projects in your build.
-This plugin will upload and release your artifacts into bintray when you run `publish`.
+This plugin will upload and release your artifacts into bintray when you run `publish`. 
+
+Make sure to add the following info to your sbt build definition:
+
+    bintrayRepository := "your-bintray-repo"
+
+    bintrayPackage := "your-bintray-package"
+
+Note that if you are creating the first version of a package, you can define any package name you want. Repository however has to match the name of an existing repository.
 
 If you try to publish at this point, you will be prompted for your bintray username and api key. This will generate an sbt credentials
 file under `~/.bintray/.credentials` used to authenticate publishing requests to bintray.
