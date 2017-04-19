@@ -12,10 +12,10 @@ An sbt interface for publishing and resolving [bintray](https://bintray.com) pac
 Add the following to your sbt `project/plugins.sbt` file:
 
 ```scala
-addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0")
+addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.4.0")
 ```
 
-_NOTE_ this plugin targets sbt 0.13.6+
+**Note**: Both the plugin organization and the name has changed in 0.4.0.
 
 You will need to add the following to your `project/build.properties` file if you have multiple versions of sbt installed
 

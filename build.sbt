@@ -1,7 +1,7 @@
 lazy val unusedWarnings = Seq("-Ywarn-unused-import", "-Ywarn-unused")
 
 lazy val commonSettings: Seq[Setting[_]] = Seq(
-    version in ThisBuild := "0.4.0-SNAPSHOT",
+    version in ThisBuild := "0.4.0",
     organization in ThisBuild := "org.foundweekends",
     homepage in ThisBuild := Some(url(s"https://github.com/sbt/${name.value}/#readme")),
     licenses in ThisBuild := Seq("MIT" ->
@@ -26,6 +26,7 @@ lazy val commonSettings: Seq[Setting[_]] = Seq(
   )
 
 lazy val root = (project in file("."))
+  .settings(commonSettings)
   .settings(
     name := "sbt-bintray",
     sbtPlugin := true,
@@ -34,9 +35,9 @@ lazy val root = (project in file("."))
       "org.slf4j" % "slf4j-nop" % "1.7.7"), // https://github.com/softprops/bintray-sbt/issues/26
     resolvers += Resolver.sonatypeRepo("releases")
   )
-  // .settings(
-  //   scalaVersion := "2.12.2",
-  //   sbtVersion in Global := "1.0.0-M5",
-  //   scalaCompilerBridgeSource :=
-  //     ("org.scala-sbt" % "compiler-interface" % "0.13.15" % "component").sources
-  // )
+  .settings(
+    scalaVersion := "2.12.2",
+    sbtVersion in Global := "1.0.0-M5",
+    scalaCompilerBridgeSource :=
+      ("org.scala-sbt" % "compiler-interface" % "0.13.15" % "component").sources
+  )
