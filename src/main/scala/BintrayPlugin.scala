@@ -5,7 +5,7 @@ import sbt.{ AutoPlugin, Credentials, Global, Path, Resolver, Setting, Task, Tag
 import sbt.Classpaths.publishTask
 import sbt.Def.{ Initialize, setting, task, taskDyn }
 import sbt.Keys._
-import sbt.Path.richFile
+import sbt._
 
 object BintrayPlugin extends AutoPlugin {
   import BintrayKeys._

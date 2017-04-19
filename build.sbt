@@ -34,3 +34,9 @@ lazy val root = (project in file("."))
       "org.slf4j" % "slf4j-nop" % "1.7.7"), // https://github.com/softprops/bintray-sbt/issues/26
     resolvers += Resolver.sonatypeRepo("releases")
   )
+  // .settings(
+  //   scalaVersion := "2.12.2",
+  //   sbtVersion in Global := "1.0.0-M5",
+  //   scalaCompilerBridgeSource :=
+  //     ("org.scala-sbt" % "compiler-interface" % "0.13.15" % "component").sources
+  // )
