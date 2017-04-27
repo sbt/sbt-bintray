@@ -81,6 +81,20 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
       case (_, fail) => sys.error(s"failed to discard $owner/$packageName@$vers: $fail")
     }
 
+  /** Request pgp credentials from the environment in the following order:
+   *
+   *  1. From system properties.
+   *  2. From system environment variables.
+   *  3. From the bintray cache.
+   *
+   * This function behaves in the same way as `requestSonatypeCredentials`.
+   */
+  def requestPgpCredentials: Option[String] = {
+    sys.props.get("pgp.pass")
+      .orElse(sys.env.get("PGP_PASS"))
+      .orElse(Cache.get("pgp.pass"))
+  }
+
   /** pgp sign remotely published artifacts then publish those signed artifacts.
    *  this assumes artifacts are published remotely. signing artifacts doesn't
    *  mean the signings themselves will be published so it is nessessary to publish
@@ -89,10 +103,9 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
   def remoteSign(packageName: String, vers: String, log: Logger): Unit =
     {
       val btyVersion = repo.get(packageName).version(vers)
-      val passphrase = Cache.get("pgp.pass").orElse(Prompt.descretely("Enter pgp passphrase"))
-        .getOrElse {
-          sys.error("pgp passphrase is required")
-        }
+      val passphrase = requestPgpCredentials
+        .orElse(Prompt.descretely("Enter pgp passphrase"))
+        .getOrElse(sys.error("pgp passphrase is required"))
       val (status, body) = await.result(
         btyVersion.sign(passphrase)(asStatusAndBody))
       if (status == 200) {
