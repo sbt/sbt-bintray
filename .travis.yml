@@ -4,7 +4,7 @@ jdk: oraclejdk8
 
 env:
   matrix:
-    - SBT_CMD="test"
-    - SBT_CMD="++2.12.2 ^^1.0.0-M6 test"
+    - SBT_CMD="test publishLocal scripted"
+    - SBT_CMD="++2.12.2 ^^1.0.0-M6 test publishLocal scripted"
 
 script: sbt "$SBT_CMD"
