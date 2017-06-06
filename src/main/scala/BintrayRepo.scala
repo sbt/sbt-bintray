@@ -1,13 +1,14 @@
 package bintray
 
-import sbt._
-import Bintray._
-import bintry.{ Attr, Client, Licenses }
+import bintray.Bintray._
+import bintry.Client
 import dispatch.Http
+import sbt._
 
 case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repoName: String) extends DispatchHandlers {
-  import scala.concurrent.ExecutionContext.Implicits.global
   import dispatch.as
+
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   val http: Http = new Http()
   lazy val BintrayCredentials(user, key) = credential

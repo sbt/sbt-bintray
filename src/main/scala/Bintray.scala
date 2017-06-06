@@ -1,9 +1,10 @@
 package bintray
 
+import bintry.{Client, Licenses}
 import sbt._
-import bintry.{ Licenses, Client }
-import scala.util.Try
+
 import scala.collection.concurrent.TrieMap
+import scala.util.Try
 
 object Bintray {
   val defaultMavenRepository = "maven"
@@ -20,18 +21,33 @@ object Bintray {
                          pkg.version(version),
                          sbt.Resolver.ivyStylePatterns.artifactPatterns, release))
 
-  def whoami(credsFile: File, log: Logger): String =
+  def whoami(creds: Option[BintrayCredentials], log: Logger): String =
     {
-      val is = BintrayCredentials.read(credsFile)
-        .fold(sys.error(_), _ match {
+      val is = creds match {
           case None =>
             "nobody"
           case Some(BintrayCredentials(user, _)) =>
             user
-        })
+      }
       log.info(is)
       is
     }
+
+  private[bintray] def loadedCredentials(settingCreds: Option[BintrayCredentials], credsFile: File, log: Logger) = {
+    def fileCreds = BintrayCredentials.read(credsFile).fold(
+      err => {
+        log.warn(err)
+        None
+      }, {
+        case None =>
+          log.warn("No bintray credentials found.")
+          None
+        case creds => creds
+      }
+    )
+
+    settingCreds.orElse(fileCreds)
+  }
 
   private[bintray] def ensureLicenses(licenses: Seq[(String, URL)], omit: Boolean): Unit =
     {
@@ -44,9 +60,8 @@ object Bintray {
       }
     }
 
-  def withRepo[A](credsFile: File, org: Option[String], repoName: String, prompt: Boolean = true)
-    (f: BintrayRepo => A): Option[A] =
-    ensuredCredentials(credsFile, prompt) map { cred =>
+  def withRepo[A](credOption: Option[BintrayCredentials], org: Option[String], repoName: String)
+    (f: BintrayRepo => A): Option[A] = credOption.map { cred =>
       val repo = cachedRepo(cred, org, repoName)
       f(repo)
     }
@@ -57,7 +72,7 @@ object Bintray {
 
   private[bintray] def ensuredCredentials(
     credsFile: File, prompt: Boolean = true): Option[BintrayCredentials] =
-    BintrayCredentials.read(credsFile).fold(sys.error(_), _ match {
+    BintrayCredentials.read(credsFile).fold(sys.error, {
       case None =>
         if (prompt) {
           println("bintray-sbt requires your bintray credentials.")
@@ -72,21 +87,17 @@ object Bintray {
 
   /** assign credentials or ask for new ones */
   private[bintray] def changeCredentials(credsFile: File): Unit =
-    BintrayCredentials.read(credsFile).fold(sys.error(_), _ match {
+    BintrayCredentials.read(credsFile).fold(sys.error, {
       case None =>
         saveBintrayCredentials(credsFile)(requestCredentials())
       case Some(BintrayCredentials(user, pass)) =>
         saveBintrayCredentials(credsFile)(requestCredentials(Some(user), Some(pass)))
     })    
 
-  private[bintray] def buildResolvers(credsFile: File, org: Option[String], repoName: String): Seq[Resolver] =
-    BintrayCredentials.read(credsFile).fold({ err =>
-      println(s"bintray credentials $err is malformed")
-      Nil
-    }, {
-      _.map { case BintrayCredentials(user, _) => Seq(Resolver.bintrayRepo(org.getOrElse(user), repoName)) }
-      .getOrElse(Nil)
-    })
+  private[bintray] def buildResolvers(credsOpt: Option[BintrayCredentials], org: Option[String], repoName: String): Seq[Resolver] =
+    credsOpt.map { creds =>
+      Seq(Resolver.bintrayRepo(org.getOrElse(creds.user), repoName))
+    }.getOrElse(Seq.empty)
 
   private def saveBintrayCredentials(to: File)(creds: (String, String)) = {
     println(s"saving credentials to $to")
@@ -99,12 +110,13 @@ object Bintray {
   private def requestCredentials(
     defaultName: Option[String] = None,
     defaultKey: Option[String] = None): (String, String) = {
-    val name = Prompt("Enter bintray username%s" format(
-      defaultName.map(" (%s)".format(_)).getOrElse(""))).orElse(defaultName).getOrElse {
+
+    val nameFormat = defaultName.map(" (%s)".format(_)).getOrElse("")
+    val name = Prompt("Enter bintray username%s" format nameFormat).orElse(defaultName).getOrElse {
       sys.error("bintray username required")
     }
-    val pass = Prompt.descretely("Enter bintray API key %s" format(
-      defaultKey.map(_ => "(use current)").getOrElse("(under https://bintray.com/profile/edit)")))
+    val passFormat = defaultKey.map(_ => "(use current)").getOrElse("(under https://bintray.com/profile/edit)")
+    val pass = Prompt.descretely("Enter bintray API key %s" format passFormat)
         .orElse(defaultKey).getOrElse {
           sys.error("bintray API key required")
         }
@@ -112,8 +124,8 @@ object Bintray {
   }
 
   private[bintray] object await {
-    import scala.concurrent.{ Await, Future }
     import scala.concurrent.duration.Duration
+    import scala.concurrent.{Await, Future}
 
     def result[T](f: => Future[T]) = Await.result(f, Duration.Inf)
     def ready[T](f: => Future[T]) = Await.ready(f, Duration.Inf)
@@ -122,15 +134,13 @@ object Bintray {
   def resolveVcsUrl: Try[Option[String]] =
     Try {
       val pushes =
-        sys.process.Process("git" :: "remote" :: "-v" :: Nil).!!.split("\n")
-         .map {
-           _.split("""\s+""") match {
-             case Array(name, url, "(push)") =>
-               Some((name, url))
-             case e =>
-               None
-           }
-         }.flatten
+        sys.process.Process("git" :: "remote" :: "-v" :: Nil).!!.split("\n").flatMap(
+          _.split("""\s+""") match {
+            case Array(name, url, "(push)") =>
+              Some((name, url))
+            case _ => None
+          }
+        )
       pushes
         .find { case (name, _) => "origin" == name }
         .orElse(pushes.headOption)
