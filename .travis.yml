@@ -1,4 +1,4 @@
 language: scala
 sudo: false
-script: sbt test
+script: sbt ++2.12.2 ^^1.0.0-M6 test
 jdk: oraclejdk8
