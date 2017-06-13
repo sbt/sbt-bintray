@@ -1,14 +1,14 @@
 package bintray
 
-import bintry.Client
 import java.io.File
 import java.net.URL
+
+import bintry.Client
 import org.apache.ivy.core.module.descriptor.Artifact
-import org.apache.ivy.plugins.resolver.IBiblioResolver
-import org.apache.ivy.plugins.resolver.URLResolver
-import org.apache.ivy.plugins.repository.{ AbstractRepository, Repository }
+import org.apache.ivy.plugins.repository.{AbstractRepository, Repository}
+import org.apache.ivy.plugins.resolver.{IBiblioResolver, URLResolver}
+
 import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 case class BintrayMavenRepository(

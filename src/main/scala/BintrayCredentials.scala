@@ -5,7 +5,7 @@ import java.io.File
 
 case class BintrayCredentials(
   user: String, password: String) {
-  override def toString = s"BintrayCredentials($user, ${"x"*password.size})"
+  override def toString = s"BintrayCredentials($user, ${"x"*password.length})"
 }
 
 object BintrayCredentials {
@@ -37,14 +37,14 @@ object BintrayCredentials {
   def read(path: File): Either[String,Option[BintrayCredentials]] =
     path match {
       case creds if creds.exists =>
-        import collection.JavaConversions._
+        import collection.JavaConverters._
         val properties = new java.util.Properties
         IO.load(properties, creds)
-        val mapped = properties.map {
+        val mapped = properties.asScala.map {
           case (k,v) => (k.toString, v.toString.trim)
         }.toMap
         val missing = Keys.filter(!mapped.contains(_))
-        if (!missing.isEmpty) Left(
+        if (missing.nonEmpty) Left(
           "missing credential properties %s in %s"
             .format(missing.mkString(", "), creds))
         else Right(Some(BintrayCredentials(

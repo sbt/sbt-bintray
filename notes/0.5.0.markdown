@@ -1,0 +1,3 @@
+## changes
+
+* added `bintrayCredentials` setting as alternative way to set credentials. It is intended to make it easier to pass settings directly into the build through environment variables rather than creating a credentials file on CI servers. When `bintrayCredentials` is set to `Some(BintrayCredentials("<user>","<password>"))` it overrides the values obtained through the `bintrayCredentialsFile` setting. 

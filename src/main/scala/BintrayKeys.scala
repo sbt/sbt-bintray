@@ -29,6 +29,9 @@ trait BintrayKeys {
   val bintrayVersionAttributes = settingKey[AttrMap](
     "List of bintray version metadata attributes")
 
+  val bintrayCredentials = settingKey[Option[BintrayCredentials]](
+    "Optionally specify bintray api credentials from the sbt build")
+
   val bintrayCredentialsFile = settingKey[File](
     "File containing bintray api credentials")
 
@@ -46,6 +49,12 @@ trait BintrayKeys {
 
   val bintrayEnsureLicenses = taskKey[Unit](
     "Ensure that the licenses for bintray are valid.")
+
+  val bintrayLoadedCredentials = settingKey[Option[BintrayCredentials]](
+    "The bintray credentials, if they can be determined from the bintrayCredentials setting or bintrayCredentialsFile.")
+
+  val bintrayTryEnsureCredentials = taskKey[Option[BintrayCredentials]](
+    "Try to ensure that the credentials for bintray are valid.")
 
   val bintrayEnsureCredentials = taskKey[BintrayCredentials](
     "Ensure that the credentials for bintray are valid.")
