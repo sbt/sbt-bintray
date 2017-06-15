@@ -47,6 +47,12 @@ resolvers += Resolver.bintrayRepo("otherUser", "maven")
 
 ## Usage
 
+Note that when specifying `sbt-bintray` settings in your build definition, you will need to add the following import:
+
+```scala
+import bintray.BintrayKeys._
+```
+
 ### Publishing
 
 To publish a package to bintray, you need a bintray account. You can do so [here](https://bintray.com/signup/index). 
