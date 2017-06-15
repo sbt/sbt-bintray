@@ -47,7 +47,7 @@ resolvers += Resolver.bintrayRepo("otherUser", "maven")
 
 ## Usage
 
-Note that when specifying `sbt-bintray` settings in your build definition, you will need to add the following import:
+Note that when specifying `sbt-bintray` settings in `project/*.scala` files (as opposed to in `build.sbt`), you will need to add the following import:
 
 ```scala
 import bintray.BintrayKeys._
@@ -55,7 +55,7 @@ import bintray.BintrayKeys._
 
 ### Publishing
 
-To publish a package to bintray, you need a bintray account. You can do so [here](https://bintray.com/signup/index). 
+To publish a package to bintray, you need a bintray account. You can register for one [here](https://bintray.com/signup/index). 
 `BintrayPlugin` is an auto plugin that will be added to all projects in your build.
 This plugin will upload and release your artifacts into bintray when you run `publish`.
 
@@ -72,11 +72,18 @@ At any time you can check who you will be authenticated as with the `bintrayWhoa
 
     > bintrayWhoami
 
-You may optionally wish to publish to a bintray organization instead of your bintray user account. To do so, use the `bintrayOrganization` setting
-in your project's build definition.
+You may optionally wish to publish to a [bintray organization](https://bintray.com/docs/usermanual/interacting/interacting_bintrayorganizations.html)
+instead of your individual bintray user account. To do so, use the `bintrayOrganization` setting in your project's build definition.
 
 ```scala
 bintrayOrganization := Some("strength-in-numbers")
+```
+
+By default, a [bintray Maven repository](https://bintray.com/docs/usermanual/uploads/uploads_yourrepositories.html) for a bintray user or
+organization is named `maven`.  If your Maven repository is named differently, you will need to specify the `bintrayRepository` setting.
+
+```scala
+bintrayRepository := "oss-maven"
 ```
 
 ##### Staging (optional)
