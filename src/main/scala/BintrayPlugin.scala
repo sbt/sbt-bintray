@@ -139,7 +139,7 @@ object BintrayPlugin extends AutoPlugin {
 
   private def warnToRelease: Initialize[Task[Unit]] =
     task {
-      val log = sLog.value
+      val log = streams.value.log
       log.warn("You must run bintrayRelease once all artifacts are staged.")
     }
 
@@ -189,7 +189,7 @@ object BintrayPlugin extends AutoPlugin {
       val btyOrg = bintrayOrganization.value
       val repoName = bintrayRepository.value
       (Bintray.withRepo(credsFile, btyOrg, repoName) { repo =>
-        repo.packageVersions(bintrayPackage.value, sLog.value)
+        repo.packageVersions(bintrayPackage.value, streams.value.log)
       }).getOrElse(Nil)
     }
 }
