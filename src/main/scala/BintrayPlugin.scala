@@ -13,7 +13,7 @@ object BintrayPlugin extends AutoPlugin {
 
   override def requires = sbt.plugins.JvmPlugin
   override def trigger = allRequirements
-  
+
   override def globalSettings: Seq[Setting[_]] = globalPublishSettings
   override def buildSettings: Seq[Setting[_]] = buildPublishSettings
   override def projectSettings: Seq[Setting[_]] = bintraySettings
@@ -31,7 +31,7 @@ object BintrayPlugin extends AutoPlugin {
       Bintray.changeCredentials(bintrayCredentialsFile.value)
     },
     bintrayWhoami := {
-      Bintray.whoami(bintrayCredentialsFile.value, streams.value.log)
+      Bintray.whoami(Bintray.ensuredCredentials(bintrayCredentialsFile.value), streams.value.log)
     }
   )
 
@@ -70,7 +70,7 @@ object BintrayPlugin extends AutoPlugin {
     // perhaps we should try overriding something in the publishConfig setting -- https://github.com/sbt/sbt-pgp/blob/master/pgp-plugin/src/main/scala/com/typesafe/sbt/pgp/PgpSettings.scala#L124-L131
     publishTo in bintray := publishToBintray.value,
     resolvers in bintray := {
-      Bintray.buildResolvers(bintrayCredentialsFile.value,
+      Bintray.buildResolvers(Bintray.ensuredCredentials(bintrayCredentialsFile.value),
         bintrayOrganization.value,
         bintrayRepository.value)
     },
@@ -131,7 +131,7 @@ object BintrayPlugin extends AutoPlugin {
 
   // uses taskDyn because it can return one of two potential tasks
   // as its result, each with their own dependencies
-  // see also: http://www.scala-sbt.org/0.13/docs/Tasks.html#Dynamic+Computations+with 
+  // see also: http://www.scala-sbt.org/0.13/docs/Tasks.html#Dynamic+Computations+with
   private def dynamicallyPublish: Initialize[Task[Unit]] =
     taskDyn {
       (if (bintrayReleaseOnPublish.value) bintrayRelease else warnToRelease).dependsOn(publishTask(publishConfiguration, deliver))
