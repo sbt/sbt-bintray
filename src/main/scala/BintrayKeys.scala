@@ -65,6 +65,9 @@ trait BintrayKeys {
   val bintrayVcsUrl = taskKey[Option[String]](
     "Canonical url for hosted version control repository")
 
+  val __bintrayErrorRepro = taskKey[String](
+    "Recreates the issue #104")
+
   /** named used for common package attributes lifted from sbt
    *  build definitions */
   object AttrNames {

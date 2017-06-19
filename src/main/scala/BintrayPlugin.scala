@@ -1,9 +1,10 @@
 package bintray
 
 import bintry.Attr
-import sbt.{ AutoPlugin, Credentials, Global, Path, Resolver, Setting, Task, Tags, ThisBuild }
+import org.json4s.native.JsonMethods
+import sbt.{AutoPlugin, Credentials, Global, Path, Resolver, Setting, Tags, Task, ThisBuild}
 import sbt.Classpaths.publishTask
-import sbt.Def.{ Initialize, setting, task, taskDyn }
+import sbt.Def.{Initialize, setting, task, taskDyn}
 import sbt.Keys._
 import sbt._
 
@@ -116,6 +117,24 @@ object BintrayPlugin extends AutoPlugin {
       val _ = publishVersionAttributesTask.value
       val repo = bintrayRepo.value
       repo.release(bintrayPackage.value, version.value, sLog.value)
+    },
+
+    /*
+     * Reproduces issue: https://github.com/sbt/sbt-bintray/issues/104
+     */
+    __bintrayErrorRepro := {
+      import org.json4s.JsonDSL._
+
+      val jsonMethods = new JsonMethods {}
+      jsonMethods.compact(
+        jsonMethods.render(
+          ("name"     -> "randomName") ~
+            ("desc"     -> Option("basicDescription")) ~
+            ("licenses" -> List("Apache", "MIT")) ~
+            ("labels"   -> List("label1", "label2")) ~
+            ("vcs_url"  -> Option("vcs"))
+        )
+      )
     }
   ) ++ Seq(
     resolvers ++= (resolvers in bintray).value,
