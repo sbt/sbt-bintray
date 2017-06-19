@@ -30,8 +30,22 @@ lazy val root = (project in file("."))
   .settings(
     name := "sbt-bintray",
     sbtPlugin := true,
+    crossSbtVersions := List("0.13.15", "1.0.0-M6"),
+    scalaVersion := (sbtVersionSeries.value match {
+      case Sbt013 => "2.10.6"
+      case Sbt1 => "2.12.2"
+    }),
     libraryDependencies ++= Seq(
       "org.foundweekends" %% "bintry" % "0.6.0",
       "org.slf4j" % "slf4j-nop" % "1.7.7"), // https://github.com/softprops/bintray-sbt/issues/26
-    resolvers += Resolver.sonatypeRepo("releases")
+    resolvers += Resolver.sonatypeRepo("releases"),
+    ScriptedPlugin.scriptedSettings,
+    scriptedBufferLog := false,
+    scriptedLaunchOpts := {
+      scriptedLaunchOpts.value ++
+        Seq("-Xmx1024M",
+          "-Dplugin.version=" + version.value,
+          "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005")
+    },
+    scripted := crossScripted.evaluated
   )
