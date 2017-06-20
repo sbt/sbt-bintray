@@ -31,7 +31,7 @@ object BintrayPlugin extends AutoPlugin {
       Bintray.changeCredentials(bintrayCredentialsFile.value)
     },
     bintrayWhoami := {
-      Bintray.whoami(bintrayCredentialsFile.value, sLog.value)
+      Bintray.whoami(bintrayCredentialsFile.value, streams.value.log)
     }
   )
 
@@ -102,20 +102,20 @@ object BintrayPlugin extends AutoPlugin {
       val e1 = bintrayEnsureBintrayPackageExists
       val e2 = bintrayEnsureLicenses
       val repo = bintrayRepo.value
-      repo.unpublish(bintrayPackage.value, version.value, sLog.value)
+      repo.unpublish(bintrayPackage.value, version.value, streams.value.log)
     },
     bintrayRemoteSign := {
       val repo = bintrayRepo.value
-      repo.remoteSign(bintrayPackage.value, version.value, sLog.value)
+      repo.remoteSign(bintrayPackage.value, version.value, streams.value.log)
     },
     bintraySyncMavenCentral := {
       val repo = bintrayRepo.value
-      repo.syncMavenCentral(bintrayPackage.value, version.value, credentials.value, sLog.value)
+      repo.syncMavenCentral(bintrayPackage.value, version.value, credentials.value, streams.value.log)
     },
     bintrayRelease := {
       val _ = publishVersionAttributesTask.value
       val repo = bintrayRepo.value
-      repo.release(bintrayPackage.value, version.value, sLog.value)
+      repo.release(bintrayPackage.value, version.value, streams.value.log)
     }
   ) ++ Seq(
     resolvers ++= (resolvers in bintray).value,
