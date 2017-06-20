@@ -23,7 +23,7 @@ case class BintrayMavenRepository(
       Duration.Inf) match {
         case (201, _) =>
         case (_, fail) =>
-          println(fail)
+          sys.error(fail)
           throw new RuntimeException(s"error uploading to $dest: $fail")
       }
 
@@ -55,7 +55,7 @@ case class BintrayIvyRepository(
       Duration.Inf) match {
         case (201, _) =>
         case (_, fail) =>
-          println(fail)
+          sys.error(fail)
           throw new RuntimeException(s"error uploading to $dest: $fail")
       }
 

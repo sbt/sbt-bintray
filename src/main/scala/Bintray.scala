@@ -60,11 +60,11 @@ object Bintray {
     BintrayCredentials.read(credsFile).fold(sys.error(_), _ match {
       case None =>
         if (prompt) {
-          println("bintray-sbt requires your bintray credentials.")
+          log.info("bintray-sbt requires your bintray credentials.")
           saveBintrayCredentials(credsFile)(requestCredentials())
           ensuredCredentials(credsFile, prompt)
         } else {
-          println(s"Missing bintray credentials $credsFile. Some bintray features depend on this.")
+          log.info(s"Missing bintray credentials $credsFile. Some bintray features depend on this.")
           None
         }
       case creds => creds
@@ -81,7 +81,7 @@ object Bintray {
 
   private[bintray] def buildResolvers(credsFile: File, org: Option[String], repoName: String): Seq[Resolver] =
     BintrayCredentials.read(credsFile).fold({ err =>
-      println(s"bintray credentials $err is malformed")
+      log.info(s"bintray credentials $err is malformed")
       Nil
     }, {
       _.map { case BintrayCredentials(user, _) => Seq(Resolver.bintrayRepo(org.getOrElse(user), repoName)) }
@@ -89,10 +89,10 @@ object Bintray {
     })
 
   private def saveBintrayCredentials(to: File)(creds: (String, String)) = {
-    println(s"saving credentials to $to")
+    log.info(s"saving credentials to $to")
     val (name, pass) = creds
     BintrayCredentials.writeBintray(name, pass, to)
-    println("reload project for sbt setting `publishTo` to take effect")
+    log.info("reload project for sbt setting `publishTo` to take effect")
   }
 
   // todo: generalize this for both bintray & sonatype credential prompts
