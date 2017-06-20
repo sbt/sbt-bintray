@@ -163,7 +163,8 @@ object BintrayPlugin extends AutoPlugin {
         (description in bintray).value,
         vcs,
         licenses.value,
-        bintrayPackageLabels.value)
+        bintrayPackageLabels.value,
+        streams.value.log)
     }
 
   /** set a user-specific bintray endpoint for sbt's `publishTo` setting.*/
