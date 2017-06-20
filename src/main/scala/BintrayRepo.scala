@@ -58,7 +58,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
       // warn the user that bintray expects maven published artifacts to be published to the `maven` repo
       // but they have explicitly opted into a publish style and/or repo that
       // deviates from that expecation
-      if (Bintray.defaultMavenRepository == repo && !mvnStyle) println(
+      if (Bintray.defaultMavenRepository == repo && !mvnStyle) log.info(
         "you have opted to publish to a repository named 'maven' but publishMavenStyle is assigned to false. This may result in unexpected behavior")
       Bintray.publishTo(repo, pkg, vers, mvnStyle, isSbtPlugin, isRelease)
     }
