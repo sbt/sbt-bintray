@@ -27,7 +27,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
    *  when it exists.
    *  todo(doug): Perhaps we want to factor that into an explicit task. */
   def ensurePackage(packageName: String, attributes: AttrMap,
-    desc: String, vcs: String, lics: Seq[(String, URL)], labels: Seq[String]): Unit =
+    desc: String, vcs: String, lics: Seq[(String, URL)], labels: Seq[String], log: Logger): Unit =
     {
       val exists =
         if (await.result(repo.get(packageName)(asFound))) {
@@ -48,6 +48,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
         }
       if (!exists) sys.error(
         s"was not able to find or create a package for $owner in $repo named $packageName")
+      log.debug(s"Requested vcs URL: $vcs")
     }
 
   def buildPublishResolver(packageName: String, vers: String, mvnStyle: Boolean,
