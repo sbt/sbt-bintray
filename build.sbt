@@ -1,7 +1,6 @@
 lazy val unusedWarnings = Seq("-Ywarn-unused-import", "-Ywarn-unused")
 
 lazy val commonSettings: Seq[Setting[_]] = Seq(
-    version in ThisBuild := "0.4.0",
     organization in ThisBuild := "org.foundweekends",
     homepage in ThisBuild := Some(url(s"https://github.com/sbt/${name.value}/#readme")),
     licenses in ThisBuild := Seq("MIT" ->

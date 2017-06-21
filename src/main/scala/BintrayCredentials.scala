@@ -34,7 +34,7 @@ object BintrayCredentials {
     val template = templateSrc(Realm, Host)_
   }
 
-  def read(path: File): Either[String,Option[BintrayCredentials]] =
+  def read(path: File): Option[BintrayCredentials] =
     path match {
       case creds if creds.exists =>
         import collection.JavaConversions._
@@ -44,12 +44,10 @@ object BintrayCredentials {
           case (k,v) => (k.toString, v.toString.trim)
         }.toMap
         val missing = Keys.filter(!mapped.contains(_))
-        if (!missing.isEmpty) Left(
-          "missing credential properties %s in %s"
-            .format(missing.mkString(", "), creds))
-        else Right(Some(BintrayCredentials(
-          mapped("user"), mapped("password"))))
-      case _ => Right(None)
+        if (!missing.isEmpty) None
+        else Some(BintrayCredentials(
+          mapped("user"), mapped("password")))
+      case _ => None
     }
 
   def writeBintray(
