@@ -179,7 +179,9 @@ object BintrayPlugin extends AutoPlugin {
           version.value,
           publishMavenStyle.value,
           sbtPlugin.value,
-          bintrayReleaseOnPublish.value)
+          bintrayReleaseOnPublish.value,
+          sLog.value
+        )
       }
     }
 
