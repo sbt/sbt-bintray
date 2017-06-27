@@ -69,16 +69,16 @@ object Bintray {
           case creds => creds
         }
 
-  private def propsCredentials(key: String) =
+  private def propsCredentials =
     for {
-      name <- sys.props.get(s"$key.user")
-      pass <- sys.props.get(s"$key.pass")
+      name <- sys.props.get("bintray.user")
+      pass <- sys.props.get("bintray.pass")
     } yield BintrayCredentials(name, pass)
 
-  private def envCredentials(key: String) =
+  private def envCredentials =
     for {
-      name <- sys.env.get(s"${key.toUpperCase}_USER")
-      pass <- sys.env.get(s"${key.toUpperCase}_PASS")
+      name <- sys.env.get("BINTRAY_USER")
+      pass <- sys.env.get("BINTRAY_PASS")
     } yield BintrayCredentials(name, pass)
 
   /** assign credentials or ask for new ones */
