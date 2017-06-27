@@ -53,20 +53,16 @@ object Bintray {
     repoCache.getOrElseUpdate((credential, org, repoName), BintrayRepo(credential, org, repoName))
 
   private[bintray] def ensuredCredentials(
-    credsFile: File, prompt: Boolean = true): Option[BintrayCredentials] =
-      propsCredentials("bintray")
-        .orElse(envCredentials("bintray"))
-        .orElse(BintrayCredentials.read(credsFile)) match {
-          case None =>
-            if (prompt) {
-              println("bintray-sbt requires your bintray credentials.")
-              saveBintrayCredentials(credsFile)(requestCredentials())
-              ensuredCredentials(credsFile, prompt)
-            } else {
-              println(s"Missing bintray credentials $credsFile. Some bintray features depend on this.")
-              None
-            }
-          case creds => creds
+    credsFile: File, log: Logger): Option[BintrayCredentials] =
+      propsCredentials
+        .orElse(envCredentials)
+        .orElse(BintrayCredentials.read(credsFile))
+        .orElse {
+          log.error(s"Missing bintray credentials. " +
+            s"Either create a credentials file with the bintrayChangeCredentials task, " +
+            s"set the BINTRAY_USER and BINTRAY_PASS environment variables or " +
+            s"pass bintray.user and bintray.pass properties to sbt.")
+          None
         }
 
   private def propsCredentials =
