@@ -98,12 +98,10 @@ object BintrayPlugin extends AutoPlugin {
       Bintray.ensuredCredentials(bintrayCredentialsFile.value, streams.value.log).get
     },
     bintrayEnsureBintrayPackageExists := ensurePackageTask.value,
-    bintrayUnpublish := {
-      val e1 = bintrayEnsureBintrayPackageExists
-      val e2 = bintrayEnsureLicenses
+    bintrayUnpublish := Def.task {
       val repo = bintrayRepo.value
       repo.unpublish(bintrayPackage.value, version.value, streams.value.log)
-    },
+    }.dependsOn(bintrayEnsureBintrayPackageExists, bintrayEnsureLicenses).value,
     bintrayRemoteSign := {
       val repo = bintrayRepo.value
       repo.remoteSign(bintrayPackage.value, version.value, streams.value.log)
