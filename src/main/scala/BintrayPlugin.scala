@@ -125,7 +125,7 @@ object BintrayPlugin extends AutoPlugin {
   private def vcsUrlTask: Initialize[Task[Option[String]]] =
     task {
       Bintray.resolveVcsUrl.recover { case _ => None }.get
-    } tag(Git)
+    }.tag(Git)
 
   // uses taskDyn because it can return one of two potential tasks
   // as its result, each with their own dependencies

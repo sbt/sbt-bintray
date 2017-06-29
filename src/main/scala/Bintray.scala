@@ -124,14 +124,15 @@ object Bintray {
     Try {
       val pushes =
         sys.process.Process("git" :: "remote" :: "-v" :: Nil).!!.split("\n")
-         .map {
+         .flatMap {
            _.split("""\s+""") match {
              case Array(name, url, "(push)") =>
                Some((name, url))
              case e =>
                None
            }
-         }.flatten
+         }
+
       pushes
         .find { case (name, _) => "origin" == name }
         .orElse(pushes.headOption)
