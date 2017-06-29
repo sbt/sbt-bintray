@@ -79,7 +79,7 @@ object Bintray {
 
   /** assign credentials or ask for new ones */
   private[bintray] def changeCredentials(credsFile: File, log: Logger): Unit =
-    Bintray.ensuredCredentials(credsFile, log) match {
+    Bintray.ensuredCredentials(credsFile, Logger.Null) match {
       case None =>
         saveBintrayCredentials(credsFile)(requestCredentials(), log)
       case Some(BintrayCredentials(user, pass)) =>
