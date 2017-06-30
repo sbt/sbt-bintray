@@ -1,0 +1,3 @@
+## changes
+
+* support loading bintray credentials from properties or environment

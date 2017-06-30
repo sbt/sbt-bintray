@@ -59,18 +59,36 @@ To publish a package to bintray, you need a bintray account. You can register fo
 `BintrayPlugin` is an auto plugin that will be added to all projects in your build.
 This plugin will upload and release your artifacts into bintray when you run `publish`.
 
-If you try to publish at this point, you will be prompted for your bintray username and api key. This will generate an sbt credentials
-file under `~/.bintray/.credentials` used to authenticate publishing requests to bintray.
-
-You can interactively change to bintray credentials used by sbt anytime with
-
-    > bintrayChangeCredentials
-
-Note you will need to reload your project afterwards which will reset your `publishTo` setting.
-
 At any time you can check who you will be authenticated as with the `bintrayWhoami` setting which will print your bintray username
 
     > bintrayWhoami
+
+#### Credentials
+
+To publish, you need to provide Bintray credentials (user name and API key). There are three ways to set them up: credential file, properties, and environment variables.
+
+1. Credentials file
+
+sbt-bintray will look for a credentials file under `~/.bintray/.credentials` used to authenticate publishing requests to bintray.
+
+You can interactively set up or change the bintray credentials used by sbt anytime with
+
+    > bintrayChangeCredentials
+
+Note you will need to `reload` your project afterwards which will reset your `publishTo` setting.
+
+
+2.  Properties
+
+You can pass the user and pass as JVM properties when starting sbt:
+
+    sbt -Dbintray.user=yourBintrayUser -Dbintray.pass=yourBintrayPass
+    
+3. Environment variables
+
+sbt-bintray will look for bintray user and pass in the environment variables `BINTRAY_USER` and  `BINTRAY_PASS`.
+
+#### Bintray organization
 
 You may optionally wish to publish to a [bintray organization](https://bintray.com/docs/usermanual/interacting/interacting_bintrayorganizations.html)
 instead of your individual bintray user account. To do so, use the `bintrayOrganization` setting in your project's build definition.
@@ -86,7 +104,7 @@ organization is named `maven`.  If your Maven repository is named differently, y
 bintrayRepository := "oss-maven"
 ```
 
-##### Staging (optional)
+#### Staging (optional)
 
 If you want to stage your all artifacts first, put this in your settings:
 
