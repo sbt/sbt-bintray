@@ -8,7 +8,6 @@ import org.apache.ivy.plugins.resolver.IBiblioResolver
 import org.apache.ivy.plugins.resolver.URLResolver
 import org.apache.ivy.plugins.repository.{ AbstractRepository, Repository }
 import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 case class BintrayMavenRepository(

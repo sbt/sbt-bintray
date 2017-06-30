@@ -126,10 +126,8 @@ object Bintray {
         sys.process.Process("git" :: "remote" :: "-v" :: Nil).!!.split("\n")
          .flatMap {
            _.split("""\s+""") match {
-             case Array(name, url, "(push)") =>
-               Some((name, url))
-             case e =>
-               None
+             case Array(name, url, "(push)") => Some((name, url))
+             case _                          => None
            }
          }
 

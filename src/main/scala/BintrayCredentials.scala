@@ -37,10 +37,10 @@ object BintrayCredentials {
   def read(path: File): Option[BintrayCredentials] =
     path match {
       case creds if creds.exists =>
-        import collection.JavaConversions._
+        import scala.collection.JavaConverters._
         val properties = new java.util.Properties
         IO.load(properties, creds)
-        val mapped = properties.map {
+        val mapped = properties.asScala.map {
           case (k,v) => (k.toString, v.toString.trim)
         }.toMap
         val missing = Keys.filter(!mapped.contains(_))
