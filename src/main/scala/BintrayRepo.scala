@@ -2,7 +2,7 @@ package bintray
 
 import sbt._
 import Bintray._
-import bintry.{ Attr, Client, Licenses }
+import bintry.Client
 import dispatch.Http
 
 case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repoName: String) extends DispatchHandlers {
