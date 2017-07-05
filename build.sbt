@@ -9,7 +9,7 @@ lazy val commonSettings: Seq[Setting[_]] = Seq(
     developers in ThisBuild := List(
       Developer("softprops", "Doug Tangren", "@softprops", url("https://github.com/softprops"))
     ),
-    scmInfo in ThisBuild := Some(ScmInfo(url(s"https://github.com/sbt/${name.value}"), s"git@github.com:sbt/{name.value}.git")),
+    scmInfo in ThisBuild := Some(ScmInfo(url(s"https://github.com/sbt/${name.value}"), s"git@github.com:sbt/${name.value}.git")),
     // crossScalaVersions in ThisBuild := Seq("2.10.6", "2.11.8", "2.12.2"),
     scalaVersion := (crossScalaVersions in ThisBuild).value.last,
     scalacOptions ++= Seq(Opts.compile.deprecation, "-Xlint", "-feature"),
