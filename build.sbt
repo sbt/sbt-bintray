@@ -36,7 +36,7 @@ lazy val root = (project in file("."))
       case _             => sys error s"Unhandled sbt version ${sbtCrossVersion.value}"
     }),
     libraryDependencies ++= Seq(
-      "org.foundweekends" %% "bintry" % "0.5.0",
+      "org.foundweekends" %% "bintry" % "0.5.1",
       "org.slf4j" % "slf4j-nop" % "1.7.7"), // https://github.com/softprops/bintray-sbt/issues/26
     resolvers += Resolver.sonatypeRepo("releases"),
     scriptedSettings,
