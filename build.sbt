@@ -29,8 +29,16 @@ lazy val root = (project in file("."))
   .settings(
     name := "sbt-bintray",
     sbtPlugin := true,
+    crossSbtVersions := List("0.13.15", "1.0.0-RC2"),
+    scalaVersion := (CrossVersion partialVersion sbtCrossVersion.value match {
+      case Some((0, 13)) => "2.10.6"
+      case Some((1, _))  => "2.12.2"
+      case _             => sys error s"Unhandled sbt version ${sbtCrossVersion.value}"
+    }),
     libraryDependencies ++= Seq(
       "org.foundweekends" %% "bintry" % "0.5.0",
       "org.slf4j" % "slf4j-nop" % "1.7.7"), // https://github.com/softprops/bintray-sbt/issues/26
     resolvers += Resolver.sonatypeRepo("releases")
   )
+
+val sbtCrossVersion = sbtVersion in pluginCrossBuild
