@@ -38,7 +38,32 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "org.foundweekends" %% "bintry" % "0.5.0",
       "org.slf4j" % "slf4j-nop" % "1.7.7"), // https://github.com/softprops/bintray-sbt/issues/26
-    resolvers += Resolver.sonatypeRepo("releases")
+    resolvers += Resolver.sonatypeRepo("releases"),
+    scriptedSettings,
+    scriptedBufferLog := true,
+    scriptedLaunchOpts ++= Seq(
+      "-Xmx1024M",
+      "-XX:MaxPermSize=256M",
+      "-Dbintray.user=username",
+      "-Dbintray.pass=password",
+      "-Dplugin.version=" + version.value
+    )
   )
 
 val sbtCrossVersion = sbtVersion in pluginCrossBuild
+
+// WORKAROUND https://github.com/sbt/sbt/issues/3325
+def scriptedSettings = Def settings (
+  ScriptedPlugin.scriptedSettings filterNot (_.key.key.label == libraryDependencies.key.label),
+  libraryDependencies ++= {
+    val cross = CrossVersion partialVersion scriptedSbt.value match {
+      case Some((0, 13)) => CrossVersion.Disabled
+      case Some((1, _))  => CrossVersion.binary
+      case _             => sys error s"Unhandled sbt version ${scriptedSbt.value}"
+    }
+    Seq(
+      "org.scala-sbt" % "scripted-sbt" % scriptedSbt.value % scriptedConf.toString cross cross,
+      "org.scala-sbt" % "sbt-launch" % scriptedSbt.value % scriptedLaunchConf.toString
+    )
+  }
+)
