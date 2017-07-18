@@ -3,9 +3,11 @@
 ```
 jenv shell 1.7
 sbt
-> publishSigned
+> publish
+
 jenv shell 1.8
-# uncomment build.sbt parts
 sbt
-> publishSigned
+> ++2.12.2
+> ^^1.0.0-RC2
+> publish
 ```
