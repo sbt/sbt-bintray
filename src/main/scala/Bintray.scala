@@ -12,13 +12,19 @@ object Bintray {
 
   def publishTo(repo: Client#Repo, pkg: Client#Repo#Package, version: String,
     mvnStyle: Boolean = true, isSbtPlugin: Boolean = false, release: Boolean = false): Resolver =
-    if (mvnStyle) RawRepository(
-      BintrayMavenResolver(s"Bintray-Maven-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
-                           s"https://api.bintray.com/maven/${repo.subject}/${repo.repo}/${repo.repo}", pkg, release))
-    else RawRepository(
-      BintrayIvyResolver(s"Bintray-${if (isSbtPlugin) "Sbt" else "Ivy"}-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
-                         pkg.version(version),
-                         sbt.Resolver.ivyStylePatterns.artifactPatterns, release))
+    if (mvnStyle) {
+      import sbt.Resolver.mavenStylePatterns
+      val id = if (isSbtPlugin) "SbtMaven" else "Maven"
+      val name = s"Bintray-$id-Publish-${repo.subject}-${repo.repo}-${pkg.name}"
+      val bintrayUrl = s"https://api.bintray.com/maven/${repo.subject}/${repo.repo}/${repo.repo}"
+      RawRepository(BintrayMavenResolver(name, bintrayUrl, pkg, mavenStylePatterns.artifactPatterns, release))
+    } else {
+      val id = if (isSbtPlugin) "SbtIvy" else "Ivy"
+      RawRepository(
+        BintrayIvyResolver(s"Bintray-$id-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
+          pkg.version(version),
+          sbt.Resolver.ivyStylePatterns.artifactPatterns, release))
+    }
 
   def whoami(creds: Option[BintrayCredentials], log: Logger): String =
     {
