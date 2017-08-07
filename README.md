@@ -19,7 +19,7 @@ addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.1")
 
 You will need to add the following to your `project/build.properties` file if you have multiple versions of sbt installed
 
-    sbt.version=0.13.8
+    sbt.version=0.13.16
 
 Be sure to use the [latest launcher](http://www.scala-sbt.org/download.html)
 
