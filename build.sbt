@@ -29,10 +29,10 @@ lazy val root = (project in file("."))
   .settings(
     name := "sbt-bintray",
     sbtPlugin := true,
-    crossSbtVersions := List("0.13.15", "1.0.0-RC2"),
+    crossSbtVersions := List("0.13.16", "1.0.0-RC3"),
     scalaVersion := (CrossVersion partialVersion sbtCrossVersion.value match {
       case Some((0, 13)) => "2.10.6"
-      case Some((1, _))  => "2.12.2"
+      case Some((1, _))  => "2.12.3"
       case _             => sys error s"Unhandled sbt version ${sbtCrossVersion.value}"
     }),
     libraryDependencies ++= Seq(
@@ -51,19 +51,3 @@ lazy val root = (project in file("."))
   )
 
 val sbtCrossVersion = sbtVersion in pluginCrossBuild
-
-// WORKAROUND https://github.com/sbt/sbt/issues/3325
-def scriptedSettings = Def settings (
-  ScriptedPlugin.scriptedSettings filterNot (_.key.key.label == libraryDependencies.key.label),
-  libraryDependencies ++= {
-    val cross = CrossVersion partialVersion scriptedSbt.value match {
-      case Some((0, 13)) => CrossVersion.Disabled
-      case Some((1, _))  => CrossVersion.binary
-      case _             => sys error s"Unhandled sbt version ${scriptedSbt.value}"
-    }
-    Seq(
-      "org.scala-sbt" % "scripted-sbt" % scriptedSbt.value % scriptedConf.toString cross cross,
-      "org.scala-sbt" % "sbt-launch" % scriptedSbt.value % scriptedLaunchConf.toString
-    )
-  }
-)
