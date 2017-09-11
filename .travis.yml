@@ -5,6 +5,6 @@ jdk: oraclejdk8
 env:
   matrix:
     - SBT_CMD=";test;scripted"
-    - SBT_CMD=";++2.12.3;^^1.0.0-RC3;test;scripted"
+    - SBT_CMD=";++2.12.3;^^1.0.0;test;scripted"
 
 script: sbt "$SBT_CMD"
