@@ -75,7 +75,7 @@ object BintrayPlugin extends AutoPlugin {
         bintrayRepository.value)
     },
     credentials in bintray := {
-      Credentials(bintrayCredentialsFile.value) :: Nil
+      Seq(bintrayCredentialsFile.value).filter(_.exists).map(Credentials.apply)
     },
     bintrayPackageAttributes := {
       if (sbtPlugin.value) Map(AttrNames.sbtPlugin -> Seq(Attr.Boolean(sbtPlugin.value)))
