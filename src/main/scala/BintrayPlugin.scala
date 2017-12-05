@@ -95,7 +95,12 @@ object BintrayPlugin extends AutoPlugin {
       Bintray.ensureLicenses(licenses.value, bintrayOmitLicense.value)
     },
     bintrayEnsureCredentials := {
-      Bintray.ensuredCredentials(bintrayCredentialsFile.value, streams.value.log).get
+      Bintray.ensuredCredentials(bintrayCredentialsFile.value, streams.value.log).getOrElse {
+        sys.error(s"Missing bintray credentials. " +
+          s"Either create a credentials file with the bintrayChangeCredentials task, " +
+          s"set the BINTRAY_USER and BINTRAY_PASS environment variables or " +
+          s"pass bintray.user and bintray.pass properties to sbt.")
+      }
     },
     bintrayEnsureBintrayPackageExists := ensurePackageTask.value,
     bintrayUnpublish := Def.task {

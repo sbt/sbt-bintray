@@ -57,13 +57,6 @@ object Bintray {
       propsCredentials
         .orElse(envCredentials)
         .orElse(BintrayCredentials.read(credsFile))
-        .orElse {
-          log.warn(s"Missing bintray credentials. " +
-            s"Either create a credentials file with the bintrayChangeCredentials task, " +
-            s"set the BINTRAY_USER and BINTRAY_PASS environment variables or " +
-            s"pass bintray.user and bintray.pass properties to sbt.")
-          None
-        }
 
   private def propsCredentials =
     for {
