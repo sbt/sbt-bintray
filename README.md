@@ -12,7 +12,7 @@ An sbt interface for publishing and resolving [bintray](https://bintray.com) pac
 Add the following to your sbt `project/plugins.sbt` file:
 
 ```scala
-addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.1")
+addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.2")
 ```
 
 **Note**: Both the plugin organization and the name has changed in 0.4.0.
