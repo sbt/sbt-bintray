@@ -1,2 +1,2 @@
-[bintray-sbt](https://github.com/softprops/bintray-sbt#readme) brings publishing back to your console.
+[sbt-bintray](https://github.com/sbt/sbt-bintray#readme) brings publishing back to your console.
 

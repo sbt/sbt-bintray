@@ -170,13 +170,13 @@ with your project's (module)name as the package name and description for your pa
 
 ### Unpublishing
 
-It's generally a bad practice to remove a version of a library others may depend on but sometimes you may want test a release with the ability to immediately take it back down if something goes south before others start depending on it. Bintray allows for this flexibility and thus, bintray-sbt does as well. Use the `unpublish` task to unpublish the current version from bintray.
+It's generally a bad practice to remove a version of a library others may depend on but sometimes you may want test a release with the ability to immediately take it back down if something goes south before others start depending on it. Bintray allows for this flexibility and thus, sbt-bintray does as well. Use the `unpublish` task to unpublish the current version from bintray.
 
     > bintrayUnpublish
 
 ### Finding your way around
 
-The easiest way to learn about bintray-sbt is to use the sbt shell typing `bintray<tab>` or `help bintray` to discover bintray keys.
+The easiest way to learn about sbt-bintray is to use the sbt shell typing `bintray<tab>` or `help bintray` to discover bintray keys.
 
 Doug Tangren (softprops) 2013-2014
 

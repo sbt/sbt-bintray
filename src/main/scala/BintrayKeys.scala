@@ -3,7 +3,7 @@ package bintray
 import sbt._
 
 trait BintrayKeys {
-  val bintray = taskKey[String]("bintray-sbt is an interface for the bintray package service")
+  val bintray = taskKey[String]("sbt-bintray is an interface for the bintray package service")
 
   val bintrayRelease = taskKey[Unit](
     "Releases a version of package on bintray")
