@@ -1,11 +1,12 @@
 # sbt-bintray
 
-An sbt interface for publishing and resolving [bintray](https://bintray.com) packages.
+An sbt interface for publishing [bintray](https://bintray.com) packages.
 
 ## install
 
 ### what you need
 
+- sbt 0.13.16 or newer
 - an account on [bintray](https://bintray.com) (get one [here](https://bintray.com/signup/index))
 - a desire to build a more diverse Scala library ecosystem
 
@@ -13,36 +14,6 @@ Add the following to your sbt `project/plugins.sbt` file:
 
 ```scala
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.2")
-```
-
-**Note**: Both the plugin organization and the name has changed in 0.4.0.
-
-You will need to add the following to your `project/build.properties` file if you have multiple versions of sbt installed
-
-    sbt.version=0.13.16
-
-Be sure to use the [latest launcher](http://www.scala-sbt.org/download.html)
-
-## Resolving bintray artifacts
-
-Using sbt 0.13.6+, you don't need this plugin to resolve bintray-hosted dependencies.
-
-```scala
-resolvers += Resolver.jcenterRepo
-```
-
-This will add JCenter (the [analog to maven central for bintray](https://bintray.com/bintray/jcenter)) to your resolver chain. JCenter is a bintray aggregation repository. You will find most of what you want there. If you wish to add your package to this repository, just link it!
-
-So you want to resolve a package from someone else's repo? Not a problem. Add the following to your sbt build definition
-
-```scala
-resolvers += Resolver.bintrayRepo("otherUser", "otherRepo")
-```
-
-Typically you will be depending on packages published to that users's "maven" repo
-
-```scala
-resolvers += Resolver.bintrayRepo("otherUser", "maven")
 ```
 
 ## Usage
@@ -76,7 +47,6 @@ You can interactively set up or change the bintray credentials used by sbt anyti
     > bintrayChangeCredentials
 
 Note you will need to `reload` your project afterwards which will reset your `publishTo` setting.
-
 
 2.  Properties
 
@@ -178,6 +148,8 @@ It's generally a bad practice to remove a version of a library others may depend
 
 The easiest way to learn about sbt-bintray is to use the sbt shell typing `bintray<tab>` or `help bintray` to discover bintray keys.
 
-Doug Tangren (softprops) 2013-2014
+## Acknowledgments
 
-always be shipping.
+This plugin was first created by Doug Tangren (softprops), 2013-2014.
+
+The plugin is now community-maintained. Releases are published by the sbt team at Lightbend.
