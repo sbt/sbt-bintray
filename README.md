@@ -2,6 +2,28 @@
 
 An sbt interface for publishing [bintray](https://bintray.com) packages.
 
+## Consuming or publishing?
+
+This plugin is for publishing.  You don't need this plugin to consume
+Bintray artifacts; sbt supports that directly.  If the library you want
+is published to [JCenter](https://bintray.com/bintray/jcenter) (which is
+like Maven Central, but for Bintray), just add:
+
+```scala
+resolvers += Resolver.jcenterRepo
+```
+
+Some libraries are published to a particular user's Bintray repo.
+In that case, do:
+
+```scala
+resolvers += Resolver.bintrayRepo("otherUser", "maven")
+```
+
+the repo name is typically `"maven"` but might be something else.
+
+If you want to _publish_ to Bintray, read on.
+
 ## install
 
 ### what you need
