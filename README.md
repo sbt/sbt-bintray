@@ -116,7 +116,7 @@ If your project does not use a license, you may opt out of specifying one:
 bintrayOmitLicense := true
 ```
 ##### public (default)
-If your project uses a license, Bintray supports those listed [here](https://bintray.com/docs/api/#_footnote_1). If you are new to software licenses you may
+If your project uses a license, Bintray supports several [OSS licenses](https://bintray.com/docs/api/#_get_oss_licenses). If you are new to software licenses you may
 want to grab a coffee and absorb some [well organized information](http://choosealicense.com/) on the topic of choice.
 Sbt already defines a `licenses` setting key. In order to use bintray sbt you must define your `licenses` key to contain a license with a name matching
 one of those bintray defines. I recommend [MIT](http://choosealicense.com/licenses/mit/).
