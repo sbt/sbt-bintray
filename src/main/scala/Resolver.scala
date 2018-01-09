@@ -18,7 +18,7 @@ case class BintrayMavenRepository(
 
   override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit =
     Await.result(
-      bty.mvnUpload(transform(dest), src).publish(release)(asStatusAndBody),
+      bty.mvnUpload(dest, src).publish(release)(asStatusAndBody),
       Duration.Inf) match {
         case (201, _) =>
         case (_, fail) =>
@@ -30,14 +30,6 @@ case class BintrayMavenRepository(
   def get(src: String, dest: File) = underlying.get(src, dest)
 
   def list(parent: String) = underlying.list(parent)
-
-  /** transforms a full url like
-   *  https://api.bintray.com/maven/:subject/maven/:name/me/lessis/:name_2.10/0.1.0/:name_2.10-0.1.0.pom
-   *  into a path like
-   *  me/lessis/:name_2.10/0.1.0/:name_2.10-0.1.0.pom
-   */
-  private def transform(dest: String) =
-    new URL(dest).getPath.split('/').drop(5).mkString("/")
 }
 
 case class BintrayIvyRepository(
@@ -63,13 +55,13 @@ case class BintrayIvyRepository(
   def list(parent: String) = underlying.list(parent)
 }
 
+import collection.JavaConverters.seqAsJavaListConverter
 case class BintrayIvyResolver(
   name: String,
   bty: Client#Repo#Package#Version,
   patterns: Seq[String],
   release: Boolean)
   extends URLResolver {
-  import collection.JavaConverters._
   setName(name)
   setM2compatible(false)
   setArtifactPatterns(patterns.toList.asJava)
@@ -82,11 +74,13 @@ case class BintrayMavenResolver(
   name: String,
   rootURL: String,
   bty: Client#Repo#Package,
+  patterns: Seq[String],
   release: Boolean)
   extends IBiblioResolver {
   setName(name)
   setM2compatible(true)
   setRoot(rootURL)
+  setArtifactPatterns(patterns.toList.asJava)
   override def setRepository(repository: Repository): Unit =
     super.setRepository(BintrayMavenRepository(repository, bty, release))
 }
