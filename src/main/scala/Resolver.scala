@@ -1,92 +1,107 @@
 package bintray
 
-import bintry.Client
 import java.io.File
 import java.net.URL
+
+import bintry.Client
 import org.apache.ivy.core.module.descriptor.Artifact
-import org.apache.ivy.plugins.resolver.IBiblioResolver
-import org.apache.ivy.plugins.resolver.URLResolver
-import org.apache.ivy.plugins.repository.{ AbstractRepository, Repository }
+import org.apache.ivy.plugins.repository.{AbstractRepository, Repository, Resource}
+import org.apache.ivy.plugins.resolver.{IBiblioResolver, URLResolver}
+import sbt.Resolver.{ivyStylePatterns, mavenStylePatterns}
+
+import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-case class BintrayMavenRepository(
-  underlying: Repository,
-  bty: Client#Repo#Package,
-  release: Boolean)
+sealed abstract class AbstractBintrayRepository(underlying: Repository)
   extends AbstractRepository with DispatchHandlers {
+
+  override def getResource(src: String): Resource = underlying.getResource(src)
+
+  override def get(src: String, dest: File): Unit = underlying.get(src, dest)
+
+  override def list(parent: String): java.util.List[_] = underlying.list(parent)
+}
+
+case class BintrayGenericRepository(
+  underlying: Repository,
+  ver: Client#Repo#Package#Version,
+  release: Boolean)
+  extends AbstractBintrayRepository(underlying) {
 
   override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit =
     Await.result(
-      bty.mvnUpload(transform(dest), src).publish(release)(asStatusAndBody),
+      ver.upload(dest, src).publish(release)(asStatusAndBody),
       Duration.Inf) match {
-        case (201, _) =>
-        case (_, fail) =>
-          throw new RuntimeException(s"error uploading to $dest: $fail")
-      }
+      case (201, _) =>
+      case (_, fail) =>
+        throw new RuntimeException(s"error uploading to $dest: $fail")
+    }
+}
 
-  def getResource(src: String) = underlying.getResource(src)
+case class BintrayMavenRepository(
+  underlying: Repository,
+  pkg: Client#Repo#Package,
+  release: Boolean)
+  extends AbstractBintrayRepository(underlying) {
 
-  def get(src: String, dest: File) = underlying.get(src, dest)
-
-  def list(parent: String) = underlying.list(parent)
+  override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit =
+    Await.result(
+      pkg.mvnUpload(transform(dest), src).publish(release)(asStatusAndBody),
+      Duration.Inf) match {
+      case (201, _) =>
+      case (_, fail) =>
+        throw new RuntimeException(s"error uploading to $dest: $fail")
+    }
 
   /** transforms a full url like
-   *  https://api.bintray.com/maven/:subject/maven/:name/me/lessis/:name_2.10/0.1.0/:name_2.10-0.1.0.pom
-   *  into a path like
-   *  me/lessis/:name_2.10/0.1.0/:name_2.10-0.1.0.pom
-   */
+    *  https://api.bintray.com/maven/:subject/maven/:name/me/lessis/:name_2.10/0.1.0/:name_2.10-0.1.0.pom
+    *  into a path like
+    *  me/lessis/:name_2.10/0.1.0/:name_2.10-0.1.0.pom
+    */
   private def transform(dest: String) =
     new URL(dest).getPath.split('/').drop(5).mkString("/")
 }
 
-case class BintrayIvyRepository(
-  underlying: Repository,
-  bty: Client#Repo#Package#Version,
-  release: Boolean)
-  extends AbstractRepository with DispatchHandlers {
-
-  override def put(
-    artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit =
-    Await.result(
-      bty.upload(dest, src).publish(release)(asStatusAndBody),
-      Duration.Inf) match {
-        case (201, _) =>
-        case (_, fail) =>
-          throw new RuntimeException(s"error uploading to $dest: $fail")
-      }
-
-  def getResource(src: String) = underlying.getResource(src)
-
-  def get(src: String, dest: File) = underlying.get(src, dest)
-
-  def list(parent: String) = underlying.list(parent)
-}
-
 case class BintrayIvyResolver(
   name: String,
-  bty: Client#Repo#Package#Version,
-  patterns: Seq[String],
+  ver: Client#Repo#Package#Version,
   release: Boolean)
   extends URLResolver {
-  import collection.JavaConverters._
+
   setName(name)
   setM2compatible(false)
-  setArtifactPatterns(patterns.toList.asJava)
+  setArtifactPatterns(ivyStylePatterns.artifactPatterns.asJava)
 
   override def setRepository(repository: Repository): Unit =
-    super.setRepository(BintrayIvyRepository(repository, bty, release))
+    super.setRepository(BintrayGenericRepository(repository, ver, release))
 }
 
 case class BintrayMavenResolver(
   name: String,
   rootURL: String,
-  bty: Client#Repo#Package,
+  ver: Client#Repo#Package,
   release: Boolean)
   extends IBiblioResolver {
+
   setName(name)
   setM2compatible(true)
   setRoot(rootURL)
+
   override def setRepository(repository: Repository): Unit =
-    super.setRepository(BintrayMavenRepository(repository, bty, release))
+    super.setRepository(BintrayMavenRepository(repository, ver, release))
+}
+
+case class BintrayMavenSbtPluginResolver(
+  name: String,
+  ver: Client#Repo#Package#Version,
+  release: Boolean)
+  extends URLResolver {
+
+  setName(name)
+  setM2compatible(true)
+  setArtifactPatterns(mavenStylePatterns.artifactPatterns.asJava)
+
+  override def setRepository(repository: Repository): Unit =
+    super.setRepository(BintrayGenericRepository(repository, ver, release))
 }
