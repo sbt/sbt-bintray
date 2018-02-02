@@ -35,7 +35,7 @@ If you want to _publish_ to Bintray, read on.
 Add the following to your sbt `project/plugins.sbt` file:
 
 ```scala
-addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.2")
+addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.3")
 ```
 
 ## Usage
