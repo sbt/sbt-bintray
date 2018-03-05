@@ -58,7 +58,11 @@ object Bintray {
 
   private val repoCache: TrieMap[(BintrayCredentials, Option[String], String), BintrayRepo] = TrieMap()
   def cachedRepo(credential: BintrayCredentials, org: Option[String], repoName: String): BintrayRepo =
-    repoCache.getOrElseUpdate((credential, org, repoName), BintrayRepo(credential, org, repoName))
+    repoCache.synchronized {
+      // lock to avoid creating and leaking HTTP client threadpools
+      // see: https://github.com/sbt/sbt-bintray/issues/144
+      repoCache.getOrElseUpdate((credential, org, repoName), BintrayRepo(credential, org, repoName))
+    }
 
   private[bintray] def ensuredCredentials(
     credsFile: File, log: Logger): Option[BintrayCredentials] =
