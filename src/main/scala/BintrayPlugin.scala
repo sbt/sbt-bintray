@@ -111,10 +111,8 @@ object BintrayPlugin extends AutoPlugin {
       val repo = bintrayRepo.value
       repo.remoteSign(bintrayPackage.value, version.value, streams.value.log)
     },
-    bintraySyncMavenCentral := {
-      val repo = bintrayRepo.value
-      repo.syncMavenCentral(bintrayPackage.value, version.value, credentials.value, streams.value.log)
-    },
+    bintraySyncMavenCentral := syncMavenCentral(close = true).value,
+    bintraySyncSonatypeStaging := syncMavenCentral(close = false).value,
     bintrayRelease := {
       val _ = publishVersionAttributesTask.value
       val repo = bintrayRepo.value
@@ -126,6 +124,11 @@ object BintrayPlugin extends AutoPlugin {
     publishTo := (publishTo in bintray).value,
     publish := dynamicallyPublish.value
   )
+
+  private def syncMavenCentral(close: Boolean): Initialize[Task[Unit]] = task {
+    val repo = bintrayRepo.value
+    repo.syncMavenCentral(bintrayPackage.value, version.value, credentials.value, close, streams.value.log)
+  }
 
   private def vcsUrlTask: Initialize[Task[Option[String]]] =
     task {

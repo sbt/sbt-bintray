@@ -62,6 +62,9 @@ trait BintrayKeys {
   val bintraySyncMavenCentral = taskKey[Unit](
     "Sync bintray-published artifacts with maven central")
 
+  val bintraySyncSonatypeStaging = taskKey[Unit](
+    "Sync bintray-published artifacts with sonatype staging repo without releasing them to maven central")
+
   val bintrayVcsUrl = taskKey[Option[String]](
     "Canonical url for hosted version control repository")
 

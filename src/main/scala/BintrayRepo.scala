@@ -131,13 +131,13 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
    *  this requires already having a sonatype oss account set up.
    *  this is itself quite a task but in the case the user has done this in the past
    *  this can be quiet a convenient feature */
-  def syncMavenCentral(packageName: String, vers: String, creds: Seq[Credentials], log: Logger): Unit =
+  def syncMavenCentral(packageName: String, vers: String, creds: Seq[Credentials], close: Boolean, log: Logger): Unit =
     {
       val btyVersion = repo.get(packageName).version(vers)
       val BintrayCredentials(sonauser, sonapass) =
         resolveSonatypeCredentials(creds)
       await.result(
-        btyVersion.mavenCentralSync(sonauser, sonapass)(asStatusAndBody)) match {
+        btyVersion.mavenCentralSync(sonauser, sonapass, close)(asStatusAndBody)) match {
         case (200, body) =>
           // store these sonatype credentials in memory for the remainder of the sbt session
           Cache.putMulti(
