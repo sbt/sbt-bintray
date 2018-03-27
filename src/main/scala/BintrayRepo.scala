@@ -11,7 +11,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
   import scala.concurrent.ExecutionContext.Implicits.global
   import dispatch.as
 
-  val http: Http = new Http()
+  lazy val http: Http = new Http()
   lazy val BintrayCredentials(user, key) = credential
   lazy val client: Client = Client(user, key, http)
   lazy val repo: Client#Repo = client.repo(org.getOrElse(user), repoName)
