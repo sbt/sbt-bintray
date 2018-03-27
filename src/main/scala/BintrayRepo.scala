@@ -5,6 +5,8 @@ import Bintray._
 import bintry.Client
 import dispatch.Http
 
+import scala.concurrent.duration.Duration
+
 case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repoName: String) extends DispatchHandlers {
   import scala.concurrent.ExecutionContext.Implicits.global
   import dispatch.as
@@ -131,27 +133,28 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
    *  this requires already having a sonatype oss account set up.
    *  this is itself quite a task but in the case the user has done this in the past
    *  this can be quiet a convenient feature */
-  def syncMavenCentral(packageName: String, vers: String, creds: Seq[Credentials], log: Logger): Unit =
+  def syncMavenCentral(packageName: String, vers: String, creds: Seq[Credentials], close: Boolean, retryDelays: Seq[Duration], log: Logger): Unit =
     {
       val btyVersion = repo.get(packageName).version(vers)
-      val BintrayCredentials(sonauser, sonapass) =
-        resolveSonatypeCredentials(creds)
-      await.result(
-        btyVersion.mavenCentralSync(sonauser, sonapass)(asStatusAndBody)) match {
-        case (200, body) =>
-          // store these sonatype credentials in memory for the remainder of the sbt session
-          Cache.putMulti(
-            ("sona.user", sonauser), ("sona.pass", sonapass))
-          log.info(s"$owner/$packageName@$vers was synced with maven central")
-          log.info(body)
-        case (404, body) =>
-          log.info(s"$owner/$packageName@$vers was not found. try publishing this package version to bintray first by typing `publish`")
-          log.info(s"body $body")
-        case (_, body) =>
-          // ensure these items are removed from the cache, they are probably bad
-          Cache.removeMulti("sona.user", "sona.pass")
-          sys.error(s"failed to sync $owner/$packageName@$vers with maven central: $body")
+      val BintrayCredentials(sonauser, sonapass) = resolveSonatypeCredentials(creds)
+      Retry.withDelays(log, retryDelays) {
+        await.result(
+          btyVersion.mavenCentralSync(sonauser, sonapass, close)(asStatusAndBody)) match {
+          case (200, body) =>
+            // store these sonatype credentials in memory for the remainder of the sbt session
+            Cache.putMulti(
+              ("sona.user", sonauser), ("sona.pass", sonapass))
+            log.info(s"$owner/$packageName@$vers was synced with maven central")
+            log.info(body)
+          case (404, body) =>
+            log.info(s"$owner/$packageName@$vers was not found. try publishing this package version to bintray first by typing `publish`")
+            log.info(s"body $body")
+          case (_, body) =>
+            // ensure these items are removed from the cache, they are probably bad
+            Cache.removeMulti("sona.user", "sona.pass")
+            sys.error(s"failed to sync $owner/$packageName@$vers with maven central: $body")
         }
+      }
     }
 
   private def resolveSonatypeCredentials(

@@ -2,6 +2,8 @@ package bintray
 
 import sbt._
 
+import scala.concurrent.duration.Duration
+
 trait BintrayKeys {
   val bintray = taskKey[String]("sbt-bintray is an interface for the bintray package service")
 
@@ -61,6 +63,12 @@ trait BintrayKeys {
 
   val bintraySyncMavenCentral = taskKey[Unit](
     "Sync bintray-published artifacts with maven central")
+
+  val bintraySyncSonatypeStaging = taskKey[Unit](
+    "Sync bintray-published artifacts with sonatype staging repo without releasing them to maven central")
+
+  val bintraySyncMavenCentralRetries = settingKey[Seq[Duration]](
+    "In case of synchronization failure, it will be retried according to delays sepcified. Set to empty sequence for no retries.")
 
   val bintrayVcsUrl = taskKey[Option[String]](
     "Canonical url for hosted version control repository")
