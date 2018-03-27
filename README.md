@@ -1,6 +1,12 @@
-# sbt-bintray
+# sbt-bintray [![travis-badge][]][travis] [![gitter-badge][]][gitter]
 
-An sbt interface for publishing [bintray](https://bintray.com) packages.
+[travis]:                https://travis-ci.org/sbt/sbt-bintray
+[travis-badge]:          https://travis-ci.org/sbt/sbt-bintray.svg?branch=master
+[gitter]:                    https://gitter.im/sbt/sbt-bintray
+[gitter-badge]:       https://badges.gitter.im/sbt/sbt-bintray.svg
+
+
+An sbt plugin for publishing [bintray](https://bintray.com) packages.
 
 ## Consuming or publishing?
 
@@ -20,13 +26,13 @@ In that case, do:
 resolvers += Resolver.bintrayRepo("otherUser", "maven")
 ```
 
-the repo name is typically `"maven"` but might be something else.
+The repo name is typically `"maven"` but might be something else.
 
 If you want to _publish_ to Bintray, read on.
 
-## install
+## Install
 
-### what you need
+### What you need
 
 - sbt 0.13.16 or newer
 - an account on [bintray](https://bintray.com) (get one [here](https://bintray.com/signup/index))
@@ -110,17 +116,21 @@ This will break the process into two parts:
 2. Once all artifacts are staged, run `bintrayRelease` to make the artifacts public
 
 #### Licenses
-##### private
+
+##### Private
+
 If your project does not use a license, you may opt out of specifying one:
+
 ```scala
 bintrayOmitLicense := true
 ```
-##### public (default)
+
+##### Public (default)
+
 If your project uses a license, Bintray supports several [OSS licenses](https://bintray.com/docs/api/#_get_oss_licenses). If you are new to software licenses you may
 want to grab a coffee and absorb some [well organized information](http://choosealicense.com/) on the topic of choice.
 Sbt already defines a `licenses` setting key. In order to use bintray sbt you must define your `licenses` key to contain a license with a name matching
 one of those bintray defines. I recommend [MIT](http://choosealicense.com/licenses/mit/).
-
 
 ```scala
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
