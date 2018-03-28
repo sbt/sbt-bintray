@@ -141,6 +141,17 @@ object BintrayPlugin extends AutoPlugin {
   // see also: http://www.scala-sbt.org/0.13/docs/Tasks.html#Dynamic+Computations+with
   private def dynamicallyPublish: Initialize[Task[Unit]] =
     taskDyn {
+      val sk = ((skip in publish) ?? false).value
+      val s = streams.value
+      val ref = thisProjectRef.value
+      if (sk) Def.task {
+        s.log.debug(s"Skipping publish for ${ref.project}")
+      }
+      else dynamicallyPublish0
+    }
+
+  private def dynamicallyPublish0: Initialize[Task[Unit]] =
+    taskDyn {
       (if (bintrayReleaseOnPublish.value) bintrayRelease else warnToRelease).dependsOn(publishTask(publishConfiguration, deliver))
     } dependsOn(bintrayEnsureBintrayPackageExists, bintrayEnsureLicenses)
 
