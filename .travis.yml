@@ -1,21 +1,49 @@
 language: scala
 sudo: false
-jdk: oraclejdk8
 
-env:
-  matrix:
-    - SBT_CMD=";test;scripted"
-    - SBT_CMD=";++2.12.3;^^1.0.0;test;scripted"
+jobs:
+  include:
+    - stage: test
+      script: sbt test scripted
+      jdk: openjdk7
 
-script: sbt "$SBT_CMD"
+    - stage: test
+      script: sbt ^^1.0.0 test scripted
+      jdk: oraclejdk8
+
+    - stage: deploy-sbt-0.13
+      script: skip
+      jdk: openjdk7
+      deploy:
+        provider: script
+        script: sbt publish
+        on:
+          tags: true
+          repo: sbt/sbt-bintray
+
+    - stage: deploy-sbt-1.0
+      script: skip
+      jdk: oraclejdk8
+      deploy:
+        provider: script
+        script: sbt ^^1.0.0 publish
+        on:
+          tags: true
+          repo: sbt/sbt-bintray
 
 before_cache:
-  - find $HOME/.ivy2 -name "ivydata-*.properties" -delete
-  - find $HOME/.sbt -name "*.lock" -delete
+  - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt  -name "*.lock"               -print -delete
 
 cache:
   directories:
-    - $HOME/.m2
-    - $HOME/.ivy2
-    - $HOME/.sbt/boot/scala-$TRAVIS_SCALA_VERSION
-    - $HOME/.sbt/launchers
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot
+
+env:
+  global:
+    # travis encrypt BINTRAY_USER=...
+    - secure: "eo+yjPcu9FZnK4ZhR5hGo6ZmWAyp2rwm1/KmaTyVcc9DMhn4YWv5DlxsnkVcPvX+RXOOSMy3zh+kK3PKRCsNSWGNICUulP5XmOT1cR55X3455kvRvzUzIXKlapw/jPU8eo+ak/g/KlWGql6y254oQfMZL5cNoC8GMfT8vLFIQhE="
+    # travis encrypt BINTRAY_PASS=...
+    - secure: "jTaZa7TqL/Kev8WZPvqaJXaI4aMLfPua4SZo9fFbUvSob1+m09cDgS33VDohq+d45n/+gSDCHePSm2/tDlqti3utM/9X3xkzUhn3kJM/70Rq1cCmBsPlnFCpnDoGYPOCBskTo1dVbmab0WIpdUtfETTe6+3jlu7ijFfXaR7Yy3c="
+
