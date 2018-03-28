@@ -58,6 +58,12 @@ To publish a package to bintray, you need a bintray account. You can register fo
 `BintrayPlugin` is an auto plugin that will be added to all projects in your build.
 This plugin will upload and release your artifacts into bintray when you run `publish`.
 
+To exclude a project from being published (for example a root or a tests project) use the `skip` setting:
+
+```scala
+skip in publish := true
+```
+
 At any time you can check who you will be authenticated as with the `bintrayWhoami` setting which will print your bintray username
 
     > bintrayWhoami
