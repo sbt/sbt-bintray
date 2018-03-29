@@ -1,9 +1,0 @@
-## changes
-
-* auto plugins friendly. this plugin is now automatically enabled if it is added in plugins.sbt, no need to reference bintraySettings
-* auto-imported keys. Keys no longer need refered to under the `bintray.Keys` namespace in your custom configuration
-* all keys are typically prefixed with `bintray` now to be more inline with current sbt plugin interface trends
-* `bintrayOrganization` now defaults to the name associated with your bintray credentials, including in the sbtPlugin case
-* `bintrayRepository` now defaults to sbt-plugins, not sbt-plugin-releases to be more inline with the [sbt docs](http://www.scala-sbt.org/0.13/docs/Bintray-For-Plugins.html)
-
-See the [readme](https://github.com/softprops/bintray-sbt#readme) for more details. This release included many changes to how this plugin works, hopefully for the better. If you find issues please [report them](https://github.com/softprops/bintray-sbt/issues/new)
