@@ -1,10 +1,11 @@
-# sbt-bintray [![travis-badge][]][travis] [![gitter-badge][]][gitter]
+# sbt-bintray [![scaladex-badge][]][scaladex] [![travis-badge][]][travis] [![gitter-badge][]][gitter]
 
-[travis]:                https://travis-ci.org/sbt/sbt-bintray
-[travis-badge]:          https://travis-ci.org/sbt/sbt-bintray.svg?branch=master
-[gitter]:                    https://gitter.im/sbt/sbt-bintray
-[gitter-badge]:       https://badges.gitter.im/sbt/sbt-bintray.svg
-
+[scaladex]:       https://index.scala-lang.org/sbt/sbt-bintray
+[scaladex-badge]: https://index.scala-lang.org/sbt/sbt-bintray/latest.svg
+[travis]:         https://travis-ci.org/sbt/sbt-bintray
+[travis-badge]:   https://travis-ci.org/sbt/sbt-bintray.svg?branch=master
+[gitter]:         https://gitter.im/sbt/sbt-bintray
+[gitter-badge]:   https://badges.gitter.im/sbt/sbt-bintray.svg
 
 An sbt plugin for publishing [bintray](https://bintray.com) packages.
 
