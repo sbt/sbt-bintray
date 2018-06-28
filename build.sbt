@@ -10,7 +10,7 @@ lazy val commonSettings: Seq[Setting[_]] = Seq(
       Developer("softprops", "Doug Tangren", "@softprops", url("https://github.com/softprops"))
     ),
     scmInfo in ThisBuild := Some(ScmInfo(url(s"https://github.com/sbt/${name.value}"), s"git@github.com:sbt/${name.value}.git")),
-    // crossScalaVersions in ThisBuild := Seq("2.10.6", "2.11.8", "2.12.6"),
+    // crossScalaVersions in ThisBuild := Seq("2.10.7", "2.11.8", "2.12.6"),
     scalaVersion := (crossScalaVersions in ThisBuild).value.last,
     scalacOptions ++= Seq(Opts.compile.deprecation, "-Xlint", "-feature"),
     scalacOptions ++= PartialFunction.condOpt(CrossVersion.partialVersion(scalaVersion.value)){
@@ -31,7 +31,7 @@ lazy val root = (project in file("."))
     sbtPlugin := true,
     crossSbtVersions := List("0.13.16", "1.0.0"),
     scalaVersion := (CrossVersion partialVersion sbtCrossVersion.value match {
-      case Some((0, 13)) => "2.10.6"
+      case Some((0, 13)) => "2.10.7"
       case Some((1, _))  => "2.12.6"
       case _             => sys error s"Unhandled sbt version ${sbtCrossVersion.value}"
     }),
