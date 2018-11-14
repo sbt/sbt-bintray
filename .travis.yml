@@ -1,35 +1,58 @@
 language: scala
 sudo: false
 
+env:
+  global:
+    - JDK6=zulu@1.6.107
+    - JABBA_HOME=/home/travis/.jabba
+
+jdk: oraclejdk8
+
 jobs:
   include:
     - stage: test
-      script: sbt test scripted
-      jdk: openjdk7
+      script:
+        - $JABBA_HOME/bin/jabba install "$JDK6"
+        - export JAVA_HOME="$JABBA_HOME/jdk/$JDK6"
+        - export PATH="$JAVA_HOME/bin:$PATH"
+        - java -version
+        - sbt test scripted
 
     - stage: test
       script: sbt ^^1.0.0 test scripted
-      jdk: oraclejdk8
 
     - stage: deploy-sbt-0.13
       script: skip
-      jdk: openjdk7
       deploy:
         provider: script
-        script: sbt publish
+        script:
+          - $JABBA_HOME/bin/jabba install "$JDK6"
+          - export JAVA_HOME="$JABBA_HOME/jdk/$JDK6"
+          - export PATH="$JAVA_HOME/bin:$PATH"
+          - java -version
+          - sbt publish
         on:
           tags: true
           repo: sbt/sbt-bintray
 
     - stage: deploy-sbt-1.0
       script: skip
-      jdk: oraclejdk8
       deploy:
         provider: script
         script: sbt ^^1.0.0 publish
         on:
           tags: true
           repo: sbt/sbt-bintray
+
+before_install:
+  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.10.1/install.sh | bash && . ~/.jabba/jabba.sh
+
+install:
+  - curl -L --fail https://piccolo.link/sbt-0.13.17.tgz > sbt-0.13.17.tgz
+  - tar zxf ./sbt-0.13.17.tgz -C $HOME/
+  - export PATH="$HOME/sbt/bin:$PATH"
+  - export SBT_OPTS="-Xms2048M -Xmx2048M -Xss2M -XX:MaxPermSize=512M"
+  - sbt about
 
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
