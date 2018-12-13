@@ -29,7 +29,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "sbt-bintray",
     sbtPlugin := true,
-    crossSbtVersions := List("0.13.16", "1.0.0"),
+    crossSbtVersions := List("0.13.18", "1.0.0"),
     scalaVersion := (CrossVersion partialVersion sbtCrossVersion.value match {
       case Some((0, 13)) => "2.10.7"
       case Some((1, _))  => "2.12.6"
