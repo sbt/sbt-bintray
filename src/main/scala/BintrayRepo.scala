@@ -80,7 +80,8 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
   /** unpublish (delete) a version of a package */
   def unpublish(packageName: String, vers: String, log: Logger): Unit =
     await.result(repo.get(packageName).version(vers).delete(asStatusAndBody)) match {
-      case (200, _) =>  log.info(s"$owner/$packageName@$vers was discarded")
+      case (200, _) => log.info(s"$owner/$packageName@$vers was discarded")
+      //case (404, _) => log.warn(s"$owner/$packageName@$vers was not found")
       case (_, fail) => sys.error(s"failed to discard $owner/$packageName@$vers: $fail")
     }
 
