@@ -103,10 +103,7 @@ object BintrayPlugin extends AutoPlugin {
       }
     },
     bintrayEnsureBintrayPackageExists := ensurePackageTask.value,
-    bintrayUnpublish := Def.task {
-      val repo = bintrayRepo.value
-      repo.unpublish(bintrayPackage.value, version.value, streams.value.log)
-    }.dependsOn(bintrayEnsureBintrayPackageExists, bintrayEnsureLicenses).value,
+    bintrayUnpublish := dynamicallyBintrayUnpublish.value,
     bintrayRemoteSign := {
       val repo = bintrayRepo.value
       repo.remoteSign(bintrayPackage.value, version.value, streams.value.log)
@@ -154,6 +151,26 @@ object BintrayPlugin extends AutoPlugin {
     taskDyn {
       (if (bintrayReleaseOnPublish.value) bintrayRelease else warnToRelease).dependsOn(publishTask(publishConfiguration, deliver))
     } dependsOn(bintrayEnsureBintrayPackageExists, bintrayEnsureLicenses)
+
+  // uses taskDyn because it can return one of two potential tasks
+  // as its result, each with their own dependencies
+  // see also: http://www.scala-sbt.org/0.13/docs/Tasks.html#Dynamic+Computations+with
+  private def dynamicallyBintrayUnpublish: Initialize[Task[Unit]] =
+    taskDyn {
+      val repo = bintrayRepo.value
+      val sk = ((skip in publish) ?? false).value
+      val s = streams.value
+      val ref = thisProjectRef.value
+      if (sk) Def.task {
+        s.log.debug(s"Skipping bintrayUnpublish for ${ref.project}")
+      } else dynamicallyBintrayUnpublish0
+    }
+
+  private def dynamicallyBintrayUnpublish0: Initialize[Task[Unit]] =
+    Def.task {
+      val repo = bintrayRepo.value
+      repo.unpublish(bintrayPackage.value, version.value, streams.value.log)
+    }.dependsOn(bintrayEnsureBintrayPackageExists, bintrayEnsureLicenses)
 
   private def warnToRelease: Initialize[Task[Unit]] =
     task {
