@@ -37,7 +37,7 @@ lazy val root = (project in file("."))
     }),
     libraryDependencies ++= Seq(
       "org.foundweekends" %% "bintry" % "0.5.2",
-      "org.slf4j" % "slf4j-nop" % "1.7.26"), // https://github.com/sbt/sbt-bintray/issues/26
+      "org.slf4j" % "slf4j-nop" % "1.7.27"), // https://github.com/sbt/sbt-bintray/issues/26
     resolvers += Resolver.sonatypeRepo("releases"),
     scriptedSettings,
     scriptedBufferLog := true,
