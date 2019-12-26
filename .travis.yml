@@ -1,19 +1,17 @@
 language: scala
 sudo: false
+jdk: openjdk8
 
 jobs:
   include:
     - stage: test
       script: sbt test scripted
-      jdk: openjdk7
 
     - stage: test
       script: sbt ^^1.0.0 test scripted
-      jdk: oraclejdk8
 
     - stage: deploy-sbt-0.13
       script: skip
-      jdk: openjdk7
       deploy:
         provider: script
         script: sbt publish
@@ -23,7 +21,6 @@ jobs:
 
     - stage: deploy-sbt-1.0
       script: skip
-      jdk: oraclejdk8
       deploy:
         provider: script
         script: sbt ^^1.0.0 publish
@@ -46,4 +43,3 @@ env:
     - secure: "eo+yjPcu9FZnK4ZhR5hGo6ZmWAyp2rwm1/KmaTyVcc9DMhn4YWv5DlxsnkVcPvX+RXOOSMy3zh+kK3PKRCsNSWGNICUulP5XmOT1cR55X3455kvRvzUzIXKlapw/jPU8eo+ak/g/KlWGql6y254oQfMZL5cNoC8GMfT8vLFIQhE="
     # travis encrypt BINTRAY_PASS=...
     - secure: "jTaZa7TqL/Kev8WZPvqaJXaI4aMLfPua4SZo9fFbUvSob1+m09cDgS33VDohq+d45n/+gSDCHePSm2/tDlqti3utM/9X3xkzUhn3kJM/70Rq1cCmBsPlnFCpnDoGYPOCBskTo1dVbmab0WIpdUtfETTe6+3jlu7ijFfXaR7Yy3c="
-

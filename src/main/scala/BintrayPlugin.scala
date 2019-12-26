@@ -18,6 +18,12 @@ object BintrayPlugin extends AutoPlugin {
   override def buildSettings: Seq[Setting[_]] = buildPublishSettings
   override def projectSettings: Seq[Setting[_]] = bintraySettings
 
+  lazy val isEnabledViaProp: Boolean = sys.props.get("sbt.sbtbintray")
+    .getOrElse("true").toLowerCase(java.util.Locale.ENGLISH) match {
+    case "true" | "1" | "always" => true
+    case _ => false
+  }
+
   object autoImport extends BintrayKeys {
   }
 
@@ -117,9 +123,22 @@ object BintrayPlugin extends AutoPlugin {
       repo.release(bintrayPackage.value, version.value, streams.value.log)
     }
   ) ++ Seq(
-    resolvers ++= (resolvers in bintray).value,
-    credentials ++= (credentials in bintray).value,
-    publishTo := (publishTo in bintray).value,
+    resolvers ++= {
+      val rs = (resolvers in bintray).value
+      if (isEnabledViaProp) rs
+      else Nil
+    },
+    credentials ++= {
+      val cs = (credentials in bintray).value
+      if (isEnabledViaProp) cs
+      else Nil
+    },
+    publishTo := {
+      val old = publishTo.value
+      val p = (publishTo in bintray).value
+      if (isEnabledViaProp) p
+      else old
+    },
     publish := dynamicallyPublish.value
   )
 
@@ -141,8 +160,10 @@ object BintrayPlugin extends AutoPlugin {
       val sk = ((skip in publish) ?? false).value
       val s = streams.value
       val ref = thisProjectRef.value
-      if (sk) Def.task {
-        s.log.debug(s"Skipping publish for ${ref.project}")
+
+      if (!isEnabledViaProp) publishTask(publishConfiguration, deliver)
+      else if (sk) Def.task {
+        s.log.debug(s"skipping publish for ${ref.project}")
       }
       else dynamicallyPublish0
     }
