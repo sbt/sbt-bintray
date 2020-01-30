@@ -91,9 +91,12 @@ object Bintray {
         saveBintrayCredentials(credsFile)(requestCredentials(Some(user), Some(pass)), log)
     }
 
-  private[bintray] def buildResolvers(creds: Option[BintrayCredentials], org: Option[String], repoName: String): Seq[Resolver] =
+  private[bintray] def buildResolvers(creds: Option[BintrayCredentials], org: Option[String], repoName: String, mavenStyle: Boolean): Seq[Resolver] =
     creds.map {
-      case BintrayCredentials(user, _) => Seq(Resolver.bintrayRepo(org.getOrElse(user), repoName))
+      case BintrayCredentials(user, _) => Seq(
+        if (mavenStyle) Resolver.bintrayRepo(org.getOrElse(user), repoName)
+        else Resolver.bintrayIvyRepo(org.getOrElse(user), repoName)
+      )
     } getOrElse Nil
 
   private def saveBintrayCredentials(to: File)(creds: (String, String), log: Logger) = {

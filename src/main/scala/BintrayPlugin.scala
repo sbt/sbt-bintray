@@ -78,7 +78,9 @@ object BintrayPlugin extends AutoPlugin {
     resolvers in bintray := {
       Bintray.buildResolvers(Bintray.ensuredCredentials(bintrayCredentialsFile.value, sLog.value),
         bintrayOrganization.value,
-        bintrayRepository.value)
+        bintrayRepository.value,
+        publishMavenStyle.value
+      )
     },
     credentials in bintray := {
       Seq(bintrayCredentialsFile.value).filter(_.exists).map(Credentials.apply)
