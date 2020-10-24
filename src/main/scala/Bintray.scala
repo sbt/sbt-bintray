@@ -21,7 +21,7 @@ object Bintray {
         case (true, _) =>
           BintrayMavenResolver(
             s"Bintray-Maven-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
-            s"https://api.bintray.com/maven/${repo.subject}/${repo.repo}/${repo.repo}", pkg, release)
+            s"https://api.bintray.com/maven/${repo.subject}/${repo.repo}/${pkg.name}", pkg, release, ignoreExists = false)
         case (false, _) =>
           BintrayIvyResolver(
             s"Bintray-${if (isSbtPlugin) "Sbt" else "Ivy"}-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
