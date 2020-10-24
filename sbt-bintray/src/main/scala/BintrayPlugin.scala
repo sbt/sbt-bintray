@@ -34,10 +34,12 @@ object BintrayPlugin extends AutoPlugin {
 
   def bintrayCommonSettings: Seq[Setting[_]] = Seq(
     bintrayChangeCredentials := {
-      Bintray.changeCredentials(bintrayCredentialsFile.value, streams.value.log)
+      val context = BintrayCredentialContext(bintrayCredentialsFile.value)
+      Bintray.changeCredentials(context, streams.value.log)
     },
     bintrayWhoami := {
-      Bintray.whoami(Bintray.ensuredCredentials(bintrayCredentialsFile.value, streams.value.log), streams.value.log)
+      val context = BintrayCredentialContext(bintrayCredentialsFile.value)
+      Bintray.whoami(Bintray.ensuredCredentials(context, streams.value.log), streams.value.log)
     }
   )
 
@@ -76,7 +78,8 @@ object BintrayPlugin extends AutoPlugin {
     // perhaps we should try overriding something in the publishConfig setting -- https://github.com/sbt/sbt-pgp/blob/master/pgp-plugin/src/main/scala/com/typesafe/sbt/pgp/PgpSettings.scala#L124-L131
     publishTo in bintray := publishToBintray.value,
     resolvers in bintray := {
-      Bintray.buildResolvers(Bintray.ensuredCredentials(bintrayCredentialsFile.value, sLog.value),
+      val context = BintrayCredentialContext(bintrayCredentialsFile.value)
+      Bintray.buildResolvers(Bintray.ensuredCredentials(context, sLog.value),
         bintrayOrganization.value,
         bintrayRepository.value,
         publishMavenStyle.value
@@ -103,7 +106,8 @@ object BintrayPlugin extends AutoPlugin {
       Bintray.ensureLicenses(licenses.value, bintrayOmitLicense.value)
     },
     bintrayEnsureCredentials := {
-      Bintray.ensuredCredentials(bintrayCredentialsFile.value, streams.value.log).getOrElse {
+      val context = BintrayCredentialContext(bintrayCredentialsFile.value)
+      Bintray.ensuredCredentials(context, streams.value.log).getOrElse {
         sys.error(s"Missing bintray credentials. " +
           s"Either create a credentials file with the bintrayChangeCredentials task, " +
           s"set the BINTRAY_USER and BINTRAY_PASS environment variables or " +
@@ -231,8 +235,9 @@ object BintrayPlugin extends AutoPlugin {
       val credsFile = bintrayCredentialsFile.value
       val btyOrg = bintrayOrganization.value
       val repoName = bintrayRepository.value
+      val context = BintrayCredentialContext(credsFile)
       // ensure that we have credentials to build a resolver that can publish to bintray
-      Bintray.withRepo(credsFile, btyOrg, repoName, sLog.value) { repo =>
+      Bintray.withRepo(context, btyOrg, repoName, sLog.value) { repo =>
         repo.buildPublishResolver(bintrayPackage.value,
           version.value,
           publishMavenStyle.value,
@@ -249,7 +254,8 @@ object BintrayPlugin extends AutoPlugin {
       val credsFile = bintrayCredentialsFile.value
       val btyOrg = bintrayOrganization.value
       val repoName = bintrayRepository.value
-      Bintray.withRepo(credsFile, btyOrg, repoName, streams.value.log) { repo =>
+      val context = BintrayCredentialContext(credsFile)
+      Bintray.withRepo(context, btyOrg, repoName, streams.value.log) { repo =>
         repo.packageVersions(bintrayPackage.value, streams.value.log)
       }.getOrElse(Nil)
     }

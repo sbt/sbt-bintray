@@ -65,6 +65,12 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
       Bintray.publishTo(repo, pkg, vers, mvnStyle, isSbtPlugin, isRelease)
     }
 
+  def buildRemoteCacheResolver(packageName: String, log: Logger): Resolver =
+    {
+      val pkg = repo.get(packageName)
+      Bintray.remoteCache(repo, pkg)
+    }
+
   def upload(packageName: String, vers: String, path: String, f: File, log: Logger): Unit =
     await.result(repo.get(packageName).version(vers).upload(path, f)(asStatusAndBody)) match {
       case (201, _) => log.info(s"$f was uploaded to $owner/$packageName@$vers")
