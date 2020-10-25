@@ -9,6 +9,8 @@
 
 An sbt plugin for publishing [bintray](https://bintray.com) packages.
 
+See [remote caching](REMOTE_CACHE.md) for information about sbt-bintray-remote-cache.
+
 ## Consuming or publishing?
 
 This plugin is for publishing.  You don't need this plugin to consume
@@ -35,8 +37,7 @@ If you want to _publish_ to Bintray, read on.
 
 ### What you need
 
-- sbt 0.13.16 or newer
-- an account on [bintray](https://bintray.com) (get one [here](https://bintray.com/signup/index))
+- an account on [bintray](https://bintray.com) (get one [here](https://bintray.com/signup/oss))
 - a desire to build a more diverse Scala library ecosystem
 
 Add the following to your sbt `project/plugins.sbt` file:
