@@ -9,6 +9,6 @@ trait DispatchHandlers {
   def asCreated =
     new FunctionHandler(_.getStatusCode == 201)
 
-  def asFound = 
-    new FunctionHandler(_.getStatusCode != 404)    
+  def asFound =
+    new FunctionHandler(_.getStatusCode != 404)
 }

@@ -21,12 +21,19 @@ object Bintray {
         case (true, _) =>
           BintrayMavenResolver(
             s"Bintray-Maven-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
-            s"https://api.bintray.com/maven/${repo.subject}/${repo.repo}/${repo.repo}", pkg, release)
+            s"https://api.bintray.com/maven/${repo.subject}/${repo.repo}/${pkg.name}", pkg, release, ignoreExists = false)
         case (false, _) =>
           BintrayIvyResolver(
             s"Bintray-${if (isSbtPlugin) "Sbt" else "Ivy"}-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
             pkg.version(version), release)
       })
+
+  def remoteCache(repo: Client#Repo, pkg: Client#Repo#Package): Resolver =
+    RawRepository(
+      BintrayMavenResolver(
+        s"Bintray-Remote-Cache-${repo.subject}-${repo.repo}-${pkg.name}",
+        s"https://api.bintray.com/maven/${repo.subject}/${repo.repo}/${pkg.name}", pkg, true, true)
+    )
 
   def whoami(creds: Option[BintrayCredentials], log: Logger): String =
     {
@@ -49,9 +56,9 @@ object Bintray {
       }
     }
 
-  def withRepo[A](credsFile: File, org: Option[String], repoName: String, log: Logger)
+  def withRepo[A](context: BintrayCredentialContext, org: Option[String], repoName: String, log: Logger)
     (f: BintrayRepo => A): Option[A] =
-    ensuredCredentials(credsFile, log) map { cred =>
+    ensuredCredentials(context, log) map { cred =>
       val repo = cachedRepo(cred, org, repoName)
       f(repo)
     }
@@ -65,30 +72,30 @@ object Bintray {
     }
 
   private[bintray] def ensuredCredentials(
-    credsFile: File, log: Logger): Option[BintrayCredentials] =
-      propsCredentials
-        .orElse(envCredentials)
-        .orElse(BintrayCredentials.read(credsFile))
+    context: BintrayCredentialContext, log: Logger): Option[BintrayCredentials] =
+      propsCredentials(context)
+        .orElse(envCredentials(context))
+        .orElse(BintrayCredentials.read(context.credsFile))
 
-  private def propsCredentials =
+  private def propsCredentials(context: BintrayCredentialContext) =
     for {
-      name <- sys.props.get("bintray.user")
-      pass <- sys.props.get("bintray.pass")
+      name <- sys.props.get(context.userNameProp)
+      pass <- sys.props.get(context.passProp)
     } yield BintrayCredentials(name, pass)
 
-  private def envCredentials =
+  private def envCredentials(context: BintrayCredentialContext) =
     for {
-      name <- sys.env.get("BINTRAY_USER")
-      pass <- sys.env.get("BINTRAY_PASS")
+      name <- sys.env.get(context.userNameEnv)
+      pass <- sys.env.get(context.passEnv)
     } yield BintrayCredentials(name, pass)
 
   /** assign credentials or ask for new ones */
-  private[bintray] def changeCredentials(credsFile: File, log: Logger): Unit =
-    Bintray.ensuredCredentials(credsFile, Logger.Null) match {
+  private[bintray] def changeCredentials(context: BintrayCredentialContext, log: Logger): Unit =
+    Bintray.ensuredCredentials(context, Logger.Null) match {
       case None =>
-        saveBintrayCredentials(credsFile)(requestCredentials(), log)
+        saveBintrayCredentials(context.credsFile)(requestCredentials(), log)
       case Some(BintrayCredentials(user, pass)) =>
-        saveBintrayCredentials(credsFile)(requestCredentials(Some(user), Some(pass)), log)
+        saveBintrayCredentials(context.credsFile)(requestCredentials(Some(user), Some(pass)), log)
     }
 
   private[bintray] def buildResolvers(creds: Option[BintrayCredentials], org: Option[String], repoName: String, mavenStyle: Boolean): Seq[Resolver] =

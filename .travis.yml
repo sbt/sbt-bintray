@@ -1,5 +1,4 @@
 language: scala
-sudo: false
 jdk: openjdk8
 
 jobs:
@@ -7,10 +6,7 @@ jobs:
     - stage: test
       script: sbt test scripted
 
-    - stage: test
-      script: sbt ^^1.0.0 test scripted
-
-    - stage: deploy-sbt-0.13
+    - stage: deploy-sbt-1.0
       script: skip
       deploy:
         provider: script
@@ -19,21 +15,15 @@ jobs:
           tags: true
           repo: sbt/sbt-bintray
 
-    - stage: deploy-sbt-1.0
-      script: skip
-      deploy:
-        provider: script
-        script: sbt ^^1.0.0 publish
-        on:
-          tags: true
-          repo: sbt/sbt-bintray
-
 before_cache:
-  - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
-  - find $HOME/.sbt  -name "*.lock"               -print -delete
+  - find $HOME/.cache/coursier/v1 -name "ivydata-*.properties" -delete
+  - find $HOME/.ivy2              -name "ivydata-*.properties" -delete
+  - find $HOME/.sbt               -name "*.lock"               -delete
+  - rm -r $(find $HOME/.sbt/boot -name "*-SNAPSHOT") || true
 
 cache:
   directories:
+    - $HOME/.cache/coursier/v1
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
 

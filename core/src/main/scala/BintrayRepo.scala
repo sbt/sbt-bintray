@@ -4,14 +4,15 @@ import sbt._
 import Bintray._
 import bintry.Client
 import dispatch.Http
-
+import java.time.Instant
+import scala.collection.mutable
 import scala.concurrent.duration.Duration
 
 case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repoName: String) extends DispatchHandlers {
   import scala.concurrent.ExecutionContext.Implicits.global
   import dispatch.as
 
-  lazy val http: Http = new Http()
+  lazy val http: Http = Http(Http.defaultClientBuilder)
   lazy val BintrayCredentials(user, key) = credential
   lazy val client: Client = Client(user, key, http)
   lazy val repo: Client#Repo = client.repo(org.getOrElse(user), repoName)
@@ -63,6 +64,12 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
       if (Bintray.defaultMavenRepository == repo.repo && !mvnStyle) log.info(
         "you have opted to publish to a repository named 'maven' but publishMavenStyle is assigned to false. This may result in unexpected behavior")
       Bintray.publishTo(repo, pkg, vers, mvnStyle, isSbtPlugin, isRelease)
+    }
+
+  def buildRemoteCacheResolver(packageName: String, log: Logger): Resolver =
+    {
+      val pkg = repo.get(packageName)
+      Bintray.remoteCache(repo, pkg)
     }
 
   def upload(packageName: String, vers: String, path: String, f: File, log: Logger): Unit =
@@ -201,7 +208,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
       import _root_.org.json4s._
       val pkg = repo.get(packageName)
       log.info(s"fetching package versions for package $packageName")
-      await.result(pkg(EitherHttp({ _ => JNothing}, as.json4s.Json))).fold({ js =>
+      await.result(pkg(EitherHttp({ _ => JNothing}, as.json4s.Json))).fold({ _ =>
         log.warn("package does not exist")
         Nil
       }, { js =>
@@ -214,5 +221,60 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
           versionString
         }
       })
+    }
+
+  def packageVersionUpdatedDate(packageName: String, version: String): Instant =
+    {
+      import _root_.org.json4s._
+      val ver = repo.get(packageName).version(version)
+      await.result(ver(EitherHttp({ _ => JNothing}, as.json4s.Json))).fold({ _ =>
+        sys.error("version does not exist")
+      }, { js =>
+        for {
+          JObject(fs)                   <- js
+          ("updated", JString(updated)) <- fs
+        } yield Instant.parse(updated)
+      }).head
+    }
+
+  def cleandOldVersions(packageName: String, min: Int, ttl: Duration, log: Logger): Unit =
+    {
+      val vers0 = packageVersions(packageName, log)
+      val vers = vers0.drop(min)
+      if (vers.isEmpty || !ttl.isFinite) ()
+      else {
+        val expirationDate = Instant.now.minusSeconds(ttl.toSeconds)
+        val expiredVersions = BintrayRepo.expiredVersions(vers.toVector, expirationDate)(packageVersionUpdatedDate(packageName, _))
+        log.info(s"about to delete $expiredVersions")
+        expiredVersions foreach { ver =>
+          unpublish(packageName, ver, log)
+        }
+      }
+    }
+}
+
+object BintrayRepo {
+  /**
+   * Return expired versions on or before the cutoffDate.
+   * vers is expected to contain a sequence of versions from newest first to old.
+   */
+  def expiredVersions(vers: Vector[String], cutoffDate: Instant)(f: String => Instant): Vector[String] =
+    {
+      val cache = mutable.Map[String, Instant]()
+      def cachedLookup(ver: String): Instant =
+        cache.getOrElseUpdate(ver, f(ver))
+      def doExpiredVersions(startIdx: Int, endIdx: Int): Vector[String] =
+        if (startIdx > endIdx) Vector.empty
+        else {
+          val startVerExpired = !cachedLookup(vers(startIdx)).isAfter(cutoffDate)
+          val endVerExpired = !cachedLookup(vers(endIdx)).isAfter(cutoffDate)
+          if (startVerExpired) vers.slice(startIdx, endIdx + 1)
+          else if (!endVerExpired) Vector.empty
+          else {
+            val midIdx = (startIdx + endIdx) / 2
+            doExpiredVersions(startIdx, midIdx - 1) ++ doExpiredVersions(midIdx, endIdx)
+          }
+        }
+      doExpiredVersions(0, vers.size - 1)
     }
 }

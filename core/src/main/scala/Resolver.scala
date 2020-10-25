@@ -42,7 +42,8 @@ case class BintrayGenericRepository(
 case class BintrayMavenRepository(
   underlying: Repository,
   pkg: Client#Repo#Package,
-  release: Boolean)
+  release: Boolean,
+  ignoreExists: Boolean)
   extends AbstractBintrayRepository(underlying) {
 
   override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit =
@@ -51,7 +52,8 @@ case class BintrayMavenRepository(
       Duration.Inf) match {
       case (201, _) =>
       case (_, fail) =>
-        throw new RuntimeException(s"error uploading to $dest: $fail")
+        if (ignoreExists && (fail contains "already exists")) ()
+        else throw new RuntimeException(s"error uploading to $dest: $fail")
     }
 
   /** transforms a full url like
@@ -81,7 +83,9 @@ case class BintrayMavenResolver(
   name: String,
   rootURL: String,
   ver: Client#Repo#Package,
-  release: Boolean)
+  release: Boolean,
+  ignoreExists: Boolean
+)
   extends IBiblioResolver {
 
   setName(name)
@@ -89,7 +93,7 @@ case class BintrayMavenResolver(
   setRoot(rootURL)
 
   override def setRepository(repository: Repository): Unit =
-    super.setRepository(BintrayMavenRepository(repository, ver, release))
+    super.setRepository(BintrayMavenRepository(repository, ver, release, ignoreExists))
 }
 
 case class BintrayMavenSbtPluginResolver(
