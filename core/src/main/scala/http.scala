@@ -1,6 +1,6 @@
 package bintray
 
-import com.ning.http.client.Response
+import org.asynchttpclient.Response
 
 case class EitherHttp[A,B](
   notFound: Response => A,

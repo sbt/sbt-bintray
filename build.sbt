@@ -44,7 +44,7 @@ lazy val core = (project in file("core"))
   .settings(
     name := "sbt-bintray-core",
     libraryDependencies ++= Seq(
-      "org.foundweekends" %% "bintry" % "0.5.2",
+      "org.foundweekends" %% "bintry" % "0.6.0",
       "org.slf4j" % "slf4j-nop" % "1.7.28", // https://github.com/sbt/sbt-bintray/issues/26
       "com.eed3si9n.verify" %% "verify" % "0.2.0" % Test,
     ),
