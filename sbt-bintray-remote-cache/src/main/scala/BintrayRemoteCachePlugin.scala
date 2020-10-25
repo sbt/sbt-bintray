@@ -20,6 +20,7 @@ object BintrayRemoteCachePlugin extends AutoPlugin {
 
   override lazy val buildSettings: Seq[Setting[_]] = Seq(
     bintrayRemoteCacheCleanOld := packageCleanOldVersionsTask.value,
+    bintrayRemoteCacheCleanOld / aggregate := false,
   )
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
