@@ -67,5 +67,5 @@ lazy val sbtBintrayRemoteCache = (project in file("sbt-bintray-remote-cache"))
   .settings(commonSettings)
   .settings(
     name := "sbt-bintray-remote-cache",
-    pluginCrossBuild / sbtVersion := "1.4.1",
+    pluginCrossBuild / sbtVersion := "1.4.2",
   )

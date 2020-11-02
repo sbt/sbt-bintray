@@ -25,6 +25,11 @@ object BintrayRemoteCachePlugin extends AutoPlugin {
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
     pushRemoteCacheTo := publishToBintraySetting.value,
+    remoteCacheResolvers := {
+      val btyOrg = bintrayRemoteCacheOrganization.value
+      val repoName = bintrayRemoteCacheRepository.value
+      List(Resolver.bintrayRepo(btyOrg, repoName))
+    },
   )
 
   def publishToBintraySetting =
