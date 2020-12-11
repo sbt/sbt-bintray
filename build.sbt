@@ -1,7 +1,7 @@
 lazy val unusedWarnings = Seq("-Ywarn-unused-import", "-Ywarn-unused")
 
 ThisBuild / organization := "org.foundweekends"
-ThisBuild / homepage     := Some(url(s"https://github.com/sbt/${name.value}"))
+ThisBuild / homepage     := Some(url("https://github.com/sbt/sbt-bintray"))
 ThisBuild / licenses     := Seq("MIT" ->
   url(s"https://github.com/sbt/${name.value}/blob/${version.value}/LICENSE"))
 ThisBuild / description  := "package publisher for bintray.com"
