@@ -46,7 +46,7 @@ lazy val core = (project in file("core"))
     libraryDependencies ++= Seq(
       "org.foundweekends" %% "bintry" % "0.6.0",
       "org.slf4j" % "slf4j-nop" % "1.7.28", // https://github.com/sbt/sbt-bintray/issues/26
-      "com.eed3si9n.verify" %% "verify" % "0.2.0" % Test,
+      "com.eed3si9n.verify" %% "verify" % "2.0.1" % Test,
     ),
     testFrameworks += new TestFramework("verify.runner.Framework"),
     resolvers += Resolver.sonatypeRepo("releases"),
