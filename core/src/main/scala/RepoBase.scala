@@ -1,11 +1,25 @@
-package bintray
+package sbtpackages
 
 import sbt._
 import bintry.{ Licenses, Client }
 import scala.util.Try
 import scala.collection.concurrent.TrieMap
 
-object Bintray {
+object Bintray extends RepoBase {
+  def repoProviderName: String = "Bintray"
+  def repoAPIMavenUrlPrefix: String = "https://api.bintray.com/maven"
+}
+
+object GitHub extends RepoBase {
+  def repoProviderName: String = "GitHub"
+  def repoAPIMavenUrlPrefix: String = "https://maven.pkg.github.com"
+}
+
+sealed trait RepoBase {
+  // e.g. Bintray, GitHub
+  def repoProviderName: String
+  def repoAPIMavenUrlPrefix: String
+
   val defaultMavenRepository = "maven"
   // http://www.scala-sbt.org/0.13/docs/Bintray-For-Plugins.html
   val defaultSbtPluginRepository = "sbt-plugins"
@@ -15,24 +29,24 @@ object Bintray {
     RawRepository(
       (mvnStyle, isSbtPlugin) match {
         case (true, true) =>
-          BintrayMavenSbtPluginResolver(
-            s"Bintray-Sbt-Maven-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
+          MavenSbtPluginResolver(
+            s"${repoProviderName}-Sbt-Maven-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
             pkg.version(version), release)
         case (true, _) =>
-          BintrayMavenResolver(
-            s"Bintray-Maven-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
-            s"https://api.bintray.com/maven/${repo.subject}/${repo.repo}/${pkg.name}", pkg, release, ignoreExists = false)
+          MavenResolver(
+            s"${repoProviderName}-Maven-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
+            s"$repoAPIMavenUrlPrefix/${repo.subject}/${repo.repo}/${pkg.name}", pkg, release, ignoreExists = false)
         case (false, _) =>
-          BintrayIvyResolver(
-            s"Bintray-${if (isSbtPlugin) "Sbt" else "Ivy"}-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
+          IvyResolver(
+            s"${repoProviderName}-${if (isSbtPlugin) "Sbt" else "Ivy"}-Publish-${repo.subject}-${repo.repo}-${pkg.name}",
             pkg.version(version), release)
       })
 
   def remoteCache(repo: Client#Repo, pkg: Client#Repo#Package): Resolver =
     RawRepository(
-      BintrayMavenResolver(
-        s"Bintray-Remote-Cache-${repo.subject}-${repo.repo}-${pkg.name}",
-        s"https://api.bintray.com/maven/${repo.subject}/${repo.repo}/${pkg.name}", pkg, true, true)
+      MavenResolver(
+        s"${repoProviderName}-Remote-Cache-${repo.subject}-${repo.repo}-${pkg.name}",
+        s"$repoAPIMavenUrlPrefix/${repo.subject}/${repo.repo}/${pkg.name}", pkg, true, true)
     )
 
   def whoami(creds: Option[BintrayCredentials], log: Logger): String =
@@ -45,7 +59,7 @@ object Bintray {
       is
     }
 
-  private[bintray] def ensureLicenses(licenses: Seq[(String, URL)], omit: Boolean): Unit =
+  private[sbtpackages] def ensureLicenses(licenses: Seq[(String, URL)], omit: Boolean): Unit =
     {
       val acceptable = Licenses.Names.toSeq.sorted.mkString(", ")
       if (!omit) {
@@ -71,11 +85,11 @@ object Bintray {
       repoCache.getOrElseUpdate((credential, org, repoName), BintrayRepo(credential, org, repoName))
     }
 
-  private[bintray] def ensuredCredentials(
+  private[sbtpackages] def ensuredCredentials(
     context: BintrayCredentialContext, log: Logger): Option[BintrayCredentials] =
       propsCredentials(context)
         .orElse(envCredentials(context))
-        .orElse(BintrayCredentials.read(context.credsFile))
+        .orElse(RepoCredentials.readBintray(context.credsFile))
 
   private def propsCredentials(context: BintrayCredentialContext) =
     for {
@@ -90,7 +104,7 @@ object Bintray {
     } yield BintrayCredentials(name, pass)
 
   /** assign credentials or ask for new ones */
-  private[bintray] def changeCredentials(context: BintrayCredentialContext, log: Logger): Unit =
+  private[sbtpackages] def changeCredentials(context: BintrayCredentialContext, log: Logger): Unit =
     Bintray.ensuredCredentials(context, Logger.Null) match {
       case None =>
         saveBintrayCredentials(context.credsFile)(requestCredentials(), log)
@@ -98,7 +112,7 @@ object Bintray {
         saveBintrayCredentials(context.credsFile)(requestCredentials(Some(user), Some(pass)), log)
     }
 
-  private[bintray] def buildResolvers(creds: Option[BintrayCredentials], org: Option[String], repoName: String, mavenStyle: Boolean): Seq[Resolver] =
+  private[sbtpackages] def buildResolvers(creds: Option[BintrayCredentials], org: Option[String], repoName: String, mavenStyle: Boolean): Seq[Resolver] =
     creds.map {
       case BintrayCredentials(user, _) => Seq(
         if (mavenStyle) Resolver.bintrayRepo(org.getOrElse(user), repoName)
@@ -109,7 +123,7 @@ object Bintray {
   private def saveBintrayCredentials(to: File)(creds: (String, String), log: Logger) = {
     log.info(s"saving credentials to $to")
     val (name, pass) = creds
-    BintrayCredentials.writeBintray(name, pass, to)
+    RepoCredentials.writeBintray(name, pass, to)
     log.info("reload project for sbt setting `publishTo` to take effect")
   }
 
@@ -127,7 +141,7 @@ object Bintray {
     (name, pass)
   }
 
-  private[bintray] object await {
+  private[sbtpackages] object await {
     import scala.concurrent.{ Await, Future }
     import scala.concurrent.duration.Duration
 

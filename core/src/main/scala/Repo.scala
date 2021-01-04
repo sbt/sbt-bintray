@@ -1,4 +1,4 @@
-package bintray
+package sbtpackages
 
 import sbt._
 import Bintray._
@@ -8,20 +8,46 @@ import java.time.Instant
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
 
-case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repoName: String) extends DispatchHandlers {
+final case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repoName: String) extends Repo[BintrayCredentials] {
+  override def publishTo(repo: Client#Repo, pkg: Client#Repo#Package, version: String,
+                         mvnStyle: Boolean = true, isSbtPlugin: Boolean = false, release: Boolean = false): Resolver =
+    Bintray.publishTo(repo, pkg, version, mvnStyle, isSbtPlugin, release)
+
+  override def remoteCache(repo: Client#Repo, pkg: Client#Repo#Package): Resolver =
+    Bintray.remoteCache(repo, pkg)
+}
+
+final case class GitHubRepo(credential: GitHubCredentials, org: Option[String], repoName: String) extends Repo[GitHubCredentials] {
+  override def publishTo(repo: Client#Repo, pkg: Client#Repo#Package, version: String,
+                         mvnStyle: Boolean = true, isSbtPlugin: Boolean = false, release: Boolean = false): Resolver = ???
+
+  override def remoteCache(repo: Client#Repo, pkg: Client#Repo#Package): Resolver = ???
+}
+
+sealed abstract class Repo[A <: RepoCredentials] extends DispatchHandlers {
+  def credential: A
+  def org: Option[String]
+  def repoName: String
+
+  def publishTo(repo: Client#Repo, pkg: Client#Repo#Package, version: String,
+                mvnStyle: Boolean = true, isSbtPlugin: Boolean = false, release: Boolean = false): Resolver
+
+  def remoteCache(repo: Client#Repo, pkg: Client#Repo#Package): Resolver
+
   import scala.concurrent.ExecutionContext.Implicits.global
   import dispatch.as
 
   lazy val http: Http = Http(Http.defaultClientBuilder)
-  lazy val BintrayCredentials(user, key) = credential
+  lazy val user = credential.user
+  lazy val key = credential.password
   lazy val client: Client = Client(user, key, http)
   lazy val repo: Client#Repo = client.repo(org.getOrElse(user), repoName)
-  def owner = org.getOrElse(user)
+  final def owner: String = org.getOrElse(user)
 
-  def close(): Unit = http.shutdown()
+  final def close(): Unit = http.shutdown()
 
   /** updates a package version with the values defined in versionAttributes in bintray */
-  def publishVersionAttributes(packageName: String, vers: String, attributes: AttrMap): Unit =
+  final def publishVersionAttributes(packageName: String, vers: String, attributes: AttrMap): Unit =
     await.ready {
       repo.get(packageName).version(vers).attrs.update(attributes.toList:_*)()
     }
@@ -29,7 +55,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
   /** Ensure user-specific bintray package exists. This will have a side effect of updating the packages attrs
    *  when it exists.
    *  todo(doug): Perhaps we want to factor that into an explicit task. */
-  def ensurePackage(packageName: String, attributes: AttrMap,
+  final def ensurePackage(packageName: String, attributes: AttrMap,
     desc: String, vcs: String, lics: Seq[(String, URL)], labels: Seq[String], log: Logger): Unit =
     {
       val exists =
@@ -54,7 +80,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
       log.debug(s"Requested vcs URL: $vcs")
     }
 
-  def buildPublishResolver(packageName: String, vers: String, mvnStyle: Boolean,
+  final def buildPublishResolver(packageName: String, vers: String, mvnStyle: Boolean,
     isSbtPlugin: Boolean, isRelease: Boolean, log: Logger): Resolver =
     {
       val pkg = repo.get(packageName)
@@ -63,29 +89,29 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
       // deviates from that expectation
       if (Bintray.defaultMavenRepository == repo.repo && !mvnStyle) log.info(
         "you have opted to publish to a repository named 'maven' but publishMavenStyle is assigned to false. This may result in unexpected behavior")
-      Bintray.publishTo(repo, pkg, vers, mvnStyle, isSbtPlugin, isRelease)
+      publishTo(repo, pkg, vers, mvnStyle, isSbtPlugin, isRelease)
     }
 
-  def buildRemoteCacheResolver(packageName: String, log: Logger): Resolver =
+  final def buildRemoteCacheResolver(packageName: String, log: Logger): Resolver =
     {
       val pkg = repo.get(packageName)
-      Bintray.remoteCache(repo, pkg)
+      remoteCache(repo, pkg)
     }
 
-  def upload(packageName: String, vers: String, path: String, f: File, log: Logger): Unit =
+  final def upload(packageName: String, vers: String, path: String, f: File, log: Logger): Unit =
     await.result(repo.get(packageName).version(vers).upload(path, f)(asStatusAndBody)) match {
       case (201, _) => log.info(s"$f was uploaded to $owner/$packageName@$vers")
       case (_, fail) => sys.error(s"failed to upload $f to $owner/$packageName@$vers: $fail")
     }
 
-  def release(packageName: String, vers: String, log: Logger): Unit =
+  final def release(packageName: String, vers: String, log: Logger): Unit =
     await.result(repo.get(packageName).version(vers).publish(asStatusAndBody)) match {
       case (200, _) => log.info(s"$owner/$packageName@$vers was released")
       case (_, fail) => sys.error(s"failed to release $owner/$packageName@$vers: $fail")
     }
 
   /** unpublish (delete) a version of a package */
-  def unpublish(packageName: String, vers: String, log: Logger): Unit =
+  final def unpublish(packageName: String, vers: String, log: Logger): Unit =
     await.result(repo.get(packageName).version(vers).delete(asStatusAndBody)) match {
       case (200, _) => log.info(s"$owner/$packageName@$vers was discarded")
       case (404, _) => log.warn(s"$owner/$packageName@$vers was not found")
@@ -100,7 +126,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
    *
    * This function behaves in the same way as `requestSonatypeCredentials`.
    */
-  def requestPgpCredentials: Option[String] = {
+  final def requestPgpCredentials: Option[String] = {
     sys.props.get("pgp.pass")
       .orElse(sys.env.get("PGP_PASS"))
       .orElse(Cache.get("pgp.pass"))
@@ -111,7 +137,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
    *  mean the signings themselves will be published so it is nessessary to publish
    *  this immediately after.
    */
-  def remoteSign(packageName: String, vers: String, log: Logger): Unit =
+  final def remoteSign(packageName: String, vers: String, log: Logger): Unit =
     {
       val btyVersion = repo.get(packageName).version(vers)
       val passphrase = requestPgpCredentials
@@ -141,7 +167,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
    *  this requires already having a sonatype oss account set up.
    *  this is itself quite a task but in the case the user has done this in the past
    *  this can be quiet a convenient feature */
-  def syncMavenCentral(packageName: String, vers: String, creds: Seq[Credentials], close: Boolean, retryDelays: Seq[Duration], log: Logger): Unit =
+  final def syncMavenCentral(packageName: String, vers: String, creds: Seq[Credentials], close: Boolean, retryDelays: Seq[Duration], log: Logger): Unit =
     {
       val btyVersion = repo.get(packageName).version(vers)
       val BintrayCredentials(sonauser, sonapass) = resolveSonatypeCredentials(creds)
@@ -167,7 +193,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
 
   private def resolveSonatypeCredentials(
     creds: Seq[sbt.Credentials]): BintrayCredentials =
-    Credentials.forHost(creds, BintrayCredentials.sonatype.Host)
+    Credentials.forHost(creds, RepoCredentials.sonatype.Host)
       .map { d => (d.userName, d.passwd) }
       .getOrElse(requestSonatypeCredentials) match {
         case (user, pass) => BintrayCredentials(user, pass)
@@ -203,7 +229,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
   }
 
   /** Lists versions of bintray packages corresponding to the current project */
-  def packageVersions(packageName: String, log: Logger): Seq[String] =
+  final def packageVersions(packageName: String, log: Logger): Seq[String] =
     {
       import _root_.org.json4s._
       val pkg = repo.get(packageName)
@@ -223,7 +249,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
       })
     }
 
-  def packageVersionUpdatedDate(packageName: String, version: String): Instant =
+  final def packageVersionUpdatedDate(packageName: String, version: String): Instant =
     {
       import _root_.org.json4s._
       val ver = repo.get(packageName).version(version)
@@ -237,14 +263,14 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
       }).head
     }
 
-  def cleandOldVersions(packageName: String, min: Int, ttl: Duration, log: Logger): Unit =
+  final def cleandOldVersions(packageName: String, min: Int, ttl: Duration, log: Logger): Unit =
     {
       val vers0 = packageVersions(packageName, log)
       val vers = vers0.drop(min)
       if (vers.isEmpty || !ttl.isFinite) ()
       else {
         val expirationDate = Instant.now.minusSeconds(ttl.toSeconds)
-        val expiredVersions = BintrayRepo.expiredVersions(vers.toVector, expirationDate)(packageVersionUpdatedDate(packageName, _))
+        val expiredVersions = Repo.expiredVersions(vers.toVector, expirationDate)(packageVersionUpdatedDate(packageName, _))
         log.info(s"about to delete $expiredVersions")
         expiredVersions foreach { ver =>
           unpublish(packageName, ver, log)
@@ -253,7 +279,7 @@ case class BintrayRepo(credential: BintrayCredentials, org: Option[String], repo
     }
 }
 
-object BintrayRepo {
+object Repo {
   /**
    * Return expired versions on or before the cutoffDate.
    * vers is expected to contain a sequence of versions from newest first to old.

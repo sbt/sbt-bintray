@@ -1,4 +1,4 @@
-package bintray
+package sbtpackages
 
 import sbt._
 import org.apache.ivy.plugins.resolver.DependencyResolver

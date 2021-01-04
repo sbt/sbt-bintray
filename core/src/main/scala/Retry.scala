@@ -1,4 +1,4 @@
-package bintray
+package sbtpackages
 
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal

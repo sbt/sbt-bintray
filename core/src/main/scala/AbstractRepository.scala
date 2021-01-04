@@ -1,11 +1,11 @@
-package bintray
+package sbtpackages
 
 import java.io.File
 import java.net.URL
 
 import bintry.Client
 import org.apache.ivy.core.module.descriptor.Artifact
-import org.apache.ivy.plugins.repository.{AbstractRepository, Repository, Resource}
+import org.apache.ivy.plugins.repository.{AbstractRepository => IvyAbstractRepository, Repository, Resource}
 import org.apache.ivy.plugins.resolver.{IBiblioResolver, URLResolver}
 import sbt.Resolver.{ivyStylePatterns, mavenStylePatterns}
 
@@ -13,8 +13,8 @@ import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-sealed abstract class AbstractBintrayRepository(underlying: Repository)
-  extends AbstractRepository with DispatchHandlers {
+sealed abstract class AbstractRepository(underlying: Repository)
+  extends IvyAbstractRepository with DispatchHandlers {
 
   override def getResource(src: String): Resource = underlying.getResource(src)
 
@@ -23,11 +23,11 @@ sealed abstract class AbstractBintrayRepository(underlying: Repository)
   override def list(parent: String): java.util.List[_] = underlying.list(parent)
 }
 
-case class BintrayGenericRepository(
+final case class GenericRepository(
   underlying: Repository,
   ver: Client#Repo#Package#Version,
   release: Boolean)
-  extends AbstractBintrayRepository(underlying) {
+  extends AbstractRepository(underlying) {
 
   override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit =
     Await.result(
@@ -39,12 +39,12 @@ case class BintrayGenericRepository(
     }
 }
 
-case class BintrayMavenRepository(
+final case class MavenRepository(
   underlying: Repository,
   pkg: Client#Repo#Package,
   release: Boolean,
   ignoreExists: Boolean)
-  extends AbstractBintrayRepository(underlying) {
+  extends AbstractRepository(underlying) {
 
   override def put(artifact: Artifact, src: File, dest: String, overwrite: Boolean): Unit =
     Await.result(
@@ -65,7 +65,7 @@ case class BintrayMavenRepository(
     new URL(dest).getPath.split('/').drop(5).mkString("/")
 }
 
-case class BintrayIvyResolver(
+final case class IvyResolver(
   name: String,
   ver: Client#Repo#Package#Version,
   release: Boolean)
@@ -76,10 +76,10 @@ case class BintrayIvyResolver(
   setArtifactPatterns(ivyStylePatterns.artifactPatterns.asJava)
 
   override def setRepository(repository: Repository): Unit =
-    super.setRepository(BintrayGenericRepository(repository, ver, release))
+    super.setRepository(GenericRepository(repository, ver, release))
 }
 
-case class BintrayMavenResolver(
+final case class MavenResolver(
   name: String,
   rootURL: String,
   ver: Client#Repo#Package,
@@ -93,10 +93,10 @@ case class BintrayMavenResolver(
   setRoot(rootURL)
 
   override def setRepository(repository: Repository): Unit =
-    super.setRepository(BintrayMavenRepository(repository, ver, release, ignoreExists))
+    super.setRepository(MavenRepository(repository, ver, release, ignoreExists))
 }
 
-case class BintrayMavenSbtPluginResolver(
+final case class MavenSbtPluginResolver(
   name: String,
   ver: Client#Repo#Package#Version,
   release: Boolean)
@@ -107,5 +107,5 @@ case class BintrayMavenSbtPluginResolver(
   setArtifactPatterns(mavenStylePatterns.artifactPatterns.asJava)
 
   override def setRepository(repository: Repository): Unit =
-    super.setRepository(BintrayGenericRepository(repository, ver, release))
+    super.setRepository(GenericRepository(repository, ver, release))
 }

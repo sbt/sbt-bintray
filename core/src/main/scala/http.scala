@@ -1,4 +1,4 @@
-package bintray
+package sbtpackages
 
 import org.asynchttpclient.Response
 

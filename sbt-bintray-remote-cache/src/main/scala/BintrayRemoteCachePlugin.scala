@@ -2,7 +2,7 @@ package sbtbintrayremotecache
 
 import sbt._
 import Keys._
-import bintray._
+import sbtpackages._
 
 object BintrayRemoteCachePlugin extends AutoPlugin {
   override def requires = sbt.plugins.JvmPlugin

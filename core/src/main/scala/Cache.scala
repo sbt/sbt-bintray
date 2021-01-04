@@ -1,6 +1,6 @@
-package bintray
+package sbtpackages
 
-private[bintray] object Cache {
+private[sbtpackages] object Cache {
   private val underlying =
     new java.util.concurrent.ConcurrentHashMap[String, String]()
   def removeMulti(keys: String*) =

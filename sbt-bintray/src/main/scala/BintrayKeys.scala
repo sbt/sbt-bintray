@@ -2,6 +2,7 @@ package bintray
 
 import sbt._
 
+import sbtpackages._
 import scala.concurrent.duration.Duration
 
 trait BintrayKeys {

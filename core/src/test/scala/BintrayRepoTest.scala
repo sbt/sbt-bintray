@@ -1,12 +1,12 @@
 package testpkg
 
 import verify._
-import bintray._
+import sbtpackages._
 import java.time.Instant
 
 object BintrayRepoTest extends BasicTestSuite {
   test("empty expiredVersions") {
-    val expired = BintrayRepo.expiredVersions(
+    val expired = Repo.expiredVersions(
       Vector.empty,
       Instant.parse("2020-04-01T00:00:00Z")
     )(fakeLookup(_))
@@ -14,7 +14,7 @@ object BintrayRepoTest extends BasicTestSuite {
   }
 
   test("cutoff date includes all") {
-    val expired = BintrayRepo.expiredVersions(
+    val expired = Repo.expiredVersions(
       Vector("2.0.0", "1.0.0", "0.5.0", "0.4.0", "0.3.0", "0.2.0", "0.1.0"),
       Instant.parse("2020-10-01T00:00:00Z")
     )(fakeLookup(_))
@@ -22,7 +22,7 @@ object BintrayRepoTest extends BasicTestSuite {
   }
 
   test("cutoff date predates all") {
-    val expired = BintrayRepo.expiredVersions(
+    val expired = Repo.expiredVersions(
       Vector("2.0.0", "1.0.0", "0.5.0", "0.4.0", "0.3.0", "0.2.0", "0.1.0"),
       Instant.parse("2020-03-01T00:00:00Z")
     )(fakeLookup(_))
@@ -30,7 +30,7 @@ object BintrayRepoTest extends BasicTestSuite {
   }
 
   test("cutoff date 06-01") {
-    val expired = BintrayRepo.expiredVersions(
+    val expired = Repo.expiredVersions(
       Vector("2.0.0", "1.0.0", "0.5.0", "0.4.0", "0.3.0", "0.2.0", "0.1.0"),
       Instant.parse("2020-06-01T00:00:00Z")
     )(fakeLookup(_))
@@ -38,7 +38,7 @@ object BintrayRepoTest extends BasicTestSuite {
   }
 
   test("cutoff date 09-01") {
-    val expired = BintrayRepo.expiredVersions(
+    val expired = Repo.expiredVersions(
       Vector("2.0.0", "1.0.0", "0.5.0", "0.4.0", "0.3.0", "0.2.0", "0.1.0"),
       Instant.parse("2020-09-01T00:00:00Z")
     )(fakeLookup(_))

@@ -1,10 +1,10 @@
-package bintray
+package sbtpackages
 
 import scala.language.reflectiveCalls
 
-import sbt.librarymanagement.RawRepository
+import sbt.librarymanagement.{ RawRepository => SbtRawRepository }
 
 object RawRepository {
-  def apply(resolver: AnyRef): RawRepository =
-    new RawRepository(resolver, resolver.asInstanceOf[{ def getName(): String }].getName)
+  def apply(resolver: AnyRef): SbtRawRepository =
+    new SbtRawRepository(resolver, resolver.asInstanceOf[{ def getName(): String }].getName)
 }
