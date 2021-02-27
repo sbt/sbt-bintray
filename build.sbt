@@ -9,7 +9,7 @@ ThisBuild / developers   := List(
   Developer("softprops", "Doug Tangren", "@softprops", url("https://github.com/softprops"))
 )
 ThisBuild / scmInfo      := Some(ScmInfo(url(s"https://github.com/sbt/${name.value}"), s"git@github.com:sbt/${name.value}.git"))
-ThisBuild / scalaVersion := "2.12.12"
+ThisBuild / scalaVersion := "2.12.13"
 
 lazy val commonSettings: Seq[Setting[_]] = Seq(
     scalacOptions ++= Seq(Opts.compile.deprecation, "-Xlint", "-feature"),
